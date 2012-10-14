@@ -4,6 +4,7 @@ import (
 	"fmt"
 )
 
+// TODO: print useful information for the usage
 var kArgumentErrorUsage string = `usage`
 var kArgumentErrorUnknownCommand string = "Unknown command: %s"
 var kArgumentErrorUnknownSubcommand string = "Unknown subcommand: %s"
