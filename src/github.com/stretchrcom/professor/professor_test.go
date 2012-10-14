@@ -8,10 +8,10 @@ import (
 
 func TestVerifyArguments(t *testing.T) {
 
+	// Test bad input
+
 	arguments := []string{"professor"}
 	success, details := VerifyArguments(arguments)
-
-	// Test bad input
 
 	if assert.False(t, success) {
 		assert.Equal(t, details, kArgumentErrorUsage)
