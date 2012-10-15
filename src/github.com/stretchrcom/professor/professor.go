@@ -10,7 +10,17 @@ import (
 )
 
 // TODO: print useful information for the usage
-var kArgumentErrorUsage string = `usage`
+var kArgumentErrorUsage string = `Usage: professor command [subcommand]
+
+Valid commands are:
+
+	run - Runs tests, recursively, starting from this directory
+	run [all] - Runs tests, recursively, including excluded directories, starting from this directory
+	install - Installs dependencies, recursively, for tests
+	exclude <directory name> - Excludes a directory from recursion
+	include <directory name> - Includes a directory in recursion
+	exclusions - Prints a list of excluded directories`
+
 var kArgumentErrorUnknownCommand string = "Unknown command: %s"
 var kArgumentErrorUnknownSubcommand string = "Unknown subcommand: %s"
 var kArgumentSubcommandRequired string = "%s requires a subcommand"
