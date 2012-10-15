@@ -155,6 +155,23 @@ func TestInclude(t *testing.T) {
 
 }
 
+func TestFormatExclusionsForPrint(t *testing.T) {
+
+	var config = make(map[string]interface{})
+	config[kConfigKeyExclusions] = make([]string, 0)
+
+	Exclude("badger", config)
+	Exclude("reavers", config)
+
+	exclusionString := "Excluded Directories:\n\tbadger\n\treavers"
+
+	assert.Equal(t, FormatExclusionsForPrint(config[kConfigKeyExclusions].([]string)), exclusionString)
+
+	Include("badger", config)
+	Include("reavers", config)
+
+}
+
 func TestRecurseDirectories(t *testing.T) {
 	//TODO: Ask Mat how the hell I should test this
 }

@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"os/exec"
+	"strings"
 )
 
 // TODO: print useful information for the usage
@@ -14,6 +16,8 @@ var kArgumentErrorUnknownSubcommand string = "Unknown subcommand: %s"
 var kArgumentSubcommandRequired string = "%s requires a subcommand"
 
 var kErrorSavingFile = "There was an error attempting to save your configuration file."
+var kErrorRecursingDirectories = "There was an error when attempting to recurse directories: %s"
+var kErrorCurrentDirectory = "There was an error attempting to get directory in which professor is being run: %s"
 
 var kCommandRun string = "run"
 var kCommandInstall string = "install"
@@ -29,6 +33,9 @@ var kValidSubcommands = []string{kSubcommandExcluded, kSubcommandAll}
 
 var kConfigKeyExclusions = "exclusions"
 var kConfigFilename = ".professor"
+
+var kShellCommandInstallDependencies string = "go test -i"
+var kShellCommandRunTest string = "go test"
 
 // Returns true if the string slice contains a given string
 func SliceContainsString(target string, slice []string) (bool, int) {
@@ -150,6 +157,67 @@ func WriteConfig(config map[string]interface{}) {
 
 }
 
+// Returns a string detailing all excluded directories.
+func FormatExclusionsForPrint(exclusions []string) string {
+
+	excludedPackages := strings.Join(exclusions, "\n\t")
+	return fmt.Sprintf("Excluded Directories:\n\t%s", excludedPackages)
+
+}
+
+// Recurses all directories and installs test dependencies
+func InstallTestDependencies() {
+	directory, error := os.Getwd()
+	if error != nil {
+		fmt.Printf(kErrorCurrentDirectory, error)
+	}
+	RecurseDirectories(directory, nil, "go test")
+}
+
+// Recurses all directories and runs commands
+// exclusions contains directories to be skipped
+// Multiple commands may be passed and each will be run
+func RecurseDirectories(directory string, exclusions []string, commands ...string) {
+
+	// If this directory is not contained in the exclusions slice
+	if success, _ := SliceContainsString(directory, exclusions); !success {
+		directoryHandle, error := os.Open(directory)
+		if error != nil {
+			fmt.Printf(kErrorRecursingDirectories, error)
+			os.Exit(1)
+		}
+		files, error := directoryHandle.Readdir(-1)
+		if error != nil {
+			fmt.Printf(kErrorRecursingDirectories, error)
+			os.Exit(1)
+		}
+
+		testFileDetected := false
+		for _, file := range files {
+			if file.IsDir() {
+				RecurseDirectories(fmt.Sprintf("%s/%s", directory, file.Name()), exclusions, commands...)
+			} else {
+				if testFileDetected == false && strings.Contains(file.Name(), "_test.go") {
+					testFileDetected = true
+				}
+			}
+		}
+
+		if testFileDetected {
+			for i := 0; i < len(commands); i++ {
+				fmt.Printf("Running: %s/%s\n", directory, commands[i])
+				command := exec.Command("go", "test")
+				command.Dir = directory
+				output, err := command.Output()
+				fmt.Printf("\n\noutput is: %s. Error is %s\n\n", output, err)
+			}
+		}
+	} else {
+		fmt.Printf("Excluded: %s\n", directory)
+	}
+
+}
+
 func main() {
 
 	arguments := os.Args
@@ -157,6 +225,7 @@ func main() {
 	// Verify the arguments
 	if success, details := VerifyArguments(arguments); !success {
 		fmt.Printf("\n%s\n\n", details)
+		os.Exit(1)
 	}
 
 	var config = make(map[string]interface{})
@@ -173,7 +242,7 @@ func main() {
 		}
 	}
 
-	//exclusions := config[kConfigKeyExclusions].([]string)
+	exclusions := config[kConfigKeyExclusions].([]string)
 	command := arguments[1]
 	subcommand := ""
 	if len(arguments) == 3 {
@@ -184,13 +253,16 @@ func main() {
 	case kCommandRun:
 		//RunTests(subcommand, exclusions)
 	case kCommandInstall:
-		//InstallTestDependencies()
+		InstallTestDependencies()
 	case kCommandExclude:
 		Exclude(subcommand, config)
+		fmt.Printf("\nExcluded: %s\n\n", subcommand)
 	case kCommandInclude:
 		Include(subcommand, config)
+		fmt.Printf("\nIncluded: %s\n\n", subcommand)
 	case kCommandExclusions:
-		//PrintExclusions(config)
+		excludedPackages := FormatExclusionsForPrint(exclusions)
+		fmt.Printf("\n%s\n\n", excludedPackages)
 	}
 
 }
