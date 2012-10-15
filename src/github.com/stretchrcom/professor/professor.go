@@ -25,62 +25,64 @@ Valid commands are:
 
 Version 1.0`
 
-// Printed when an unknown command is passed to the program.
-var kArgumentErrorUnknownCommand string = "Unknown command: %s"
+var (
+	// Printed when an unknown command is passed to the program.
+	kArgumentErrorUnknownCommand string = "Unknown command: %s"
 
-// Printed when an unknown subcommand is passed to the program.
-var kArgumentErrorUnknownSubcommand string = "Unknown subcommand: %s"
+	// Printed when an unknown subcommand is passed to the program.
+	kArgumentErrorUnknownSubcommand string = "Unknown subcommand: %s"
 
-// Printed when a subcommand is required, but was not passed.
-var kArgumentErrorSubcommandRequired string = "%s requires a subcommand"
+	// Printed when a subcommand is required, but was not passed.
+	kArgumentErrorSubcommandRequired string = "%s requires a subcommand"
 
-// Printed when an error occurs attempting to save the configuration file.
-var kErrorSavingFile = "There was an error attempting to save your configuration file."
+	// Printed when an error occurs attempting to save the configuration file.
+	kErrorSavingFile = "There was an error attempting to save your configuration file."
 
-// Printed when an error occurs recursing through the directory structure.
-var kErrorRecursingDirectories = "There was an error when attempting to recurse directories: %s"
+	// Printed when an error occurs recursing through the directory structure.
+	kErrorRecursingDirectories = "There was an error when attempting to recurse directories: %s"
 
-// Printed when an error occurs attempting to get the current working directory.
-var kErrorCurrentDirectory = "There was an error attempting to get directory in which professor is being run: %s"
+	// Printed when an error occurs attempting to get the current working directory.
+	kErrorCurrentDirectory = "There was an error attempting to get directory in which professor is being run: %s"
 
-// The run command.
-var kCommandRun string = "run"
+	// The run command.
+	kCommandRun string = "run"
 
-// The install command.
-var kCommandInstall string = "install"
+	// The install command.
+	kCommandInstall string = "install"
 
-// The exclude command.
-var kCommandExclude string = "exclude"
+	// The exclude command.
+	kCommandExclude string = "exclude"
 
-// The include command.
-var kCommandInclude string = "include"
+	// The include command.
+	kCommandInclude string = "include"
 
-// The exclusions command.
-var kCommandExclusions string = "exclusions"
+	// The exclusions command.
+	kCommandExclusions string = "exclusions"
 
-// Valid top level commands. Used to verify the top level command is sane.
-var kValidCommands = []string{kCommandRun, kCommandInstall, kCommandExclude, kCommandInclude, kCommandExclusions}
+	// Valid top level commands. Used to verify the top level command is sane.
+	kValidCommands = []string{kCommandRun, kCommandInstall, kCommandExclude, kCommandInclude, kCommandExclusions}
 
-// Top level commands that require a subcommand. Used to enforce subcommands when required.
-var kCommandsRequiringSubcommands = []string{kCommandExclude, kCommandInclude}
+	// Top level commands that require a subcommand. Used to enforce subcommands when required.
+	kCommandsRequiringSubcommands = []string{kCommandExclude, kCommandInclude}
 
-// The all subcommand. Used with the run command.
-var kSubcommandAll string = "all"
+	// The all subcommand. Used with the run command.
+	kSubcommandAll string = "all"
 
-// Valid subcommands. Used to verify subcommand is sane.
-var kValidSubcommands = []string{kSubcommandAll}
+	// Valid subcommands. Used to verify subcommand is sane.
+	kValidSubcommands = []string{kSubcommandAll}
 
-// The key in the configuration object at which the exclusions list is stored
-var kConfigKeyExclusions = "exclusions"
+	// The key in the configuration object at which the exclusions list is stored
+	kConfigKeyExclusions = "exclusions"
 
-// The name of the professor configuration file
-var kConfigFilename = ".professor"
+	// The name of the professor configuration file
+	kConfigFilename = ".professor"
 
-// The shell command to run when installing dependencies
-var kShellCommandInstallDependencies string = "go test -i"
+	// The shell command to run when installing dependencies
+	kShellCommandInstallDependencies string = "go test -i"
 
-// The shell command to run when executing tests
-var kShellCommandRunTest string = "go test"
+	// The shell command to run when executing tests
+	kShellCommandRunTest string = "go test"
+)
 
 // Returns true, index if the string slice contains a given string.
 func SliceContainsString(target string, slice []string) (bool, int) {
