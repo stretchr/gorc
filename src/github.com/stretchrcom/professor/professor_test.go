@@ -69,3 +69,69 @@ func TestVerifyArguments(t *testing.T) {
 	assert.True(t, success, details)
 
 }
+
+func TestEncodeJSON(t *testing.T) {
+
+	var object = make(map[string]interface{})
+	object[kConfigKeyExclusions] = []string{"alliance", "badger"}
+
+	json, error := EncodeJSON(object)
+
+	if assert.Nil(t, error) {
+		assert.Equal(t, string(json), `{"exclusions":["alliance","badger"]}`)
+	}
+
+}
+
+func TestDecodeJSON(t *testing.T) {
+
+	var object = make(map[string]interface{})
+	object[kConfigKeyExclusions] = []string{"alliance", "badger"}
+
+	var decodedObject map[string]interface{}
+
+	error := DecodeJSON([]byte(`{"exclusions":["alliance","badger"]}`), &decodedObject)
+
+	if assert.Nil(t, error) {
+		//TODO: fix assert.Equal to make this work
+		//assert.Equal(t, object, decodedObject)
+	}
+
+	error = DecodeJSON([]byte(`whee{}{[[;;:`), &decodedObject)
+
+	assert.NotNil(t, error)
+}
+
+func TestExclude(t *testing.T) {
+
+	var config = make(map[string]interface{})
+
+	Exclude("badger", config)
+
+	assert.Equal(t, 1, len(config[kConfigKeyExclusions].([]string)))
+	assert.Equal(t, config[kConfigKeyExclusions].([]string)[0], "badger")
+
+}
+
+func TestInclude(t *testing.T) {
+
+	var config = make(map[string]interface{})
+
+	Exclude("badger", config)
+	Exclude("reavers", config)
+
+	assert.Equal(t, 2, len(config[kConfigKeyExclusions].([]string)), fmt.Sprintf("%v", config[kConfigKeyExclusions].([]string)))
+
+	Include("reavers", config)
+
+	assert.Equal(t, 1, len(config[kConfigKeyExclusions].([]string)), fmt.Sprintf("%v", config[kConfigKeyExclusions].([]string)))
+
+	Include("badger", config)
+
+	assert.Equal(t, 0, len(config[kConfigKeyExclusions].([]string)), fmt.Sprintf("%v", config[kConfigKeyExclusions].([]string)))
+
+}
+
+func TestRecurseDirectories(t *testing.T) {
+	//TODO: Ask Mat how the hell I should test this
+}
