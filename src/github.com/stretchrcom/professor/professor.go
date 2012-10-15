@@ -165,22 +165,37 @@ func FormatExclusionsForPrint(exclusions []string) string {
 
 }
 
-// Recurses all directories and installs test dependencies
-func InstallTestDependencies() {
+// Recurses all directories and installes tests dependencies, then runs tests
+func RunTests(exclusions []string) (int, int) {
 	directory, error := os.Getwd()
 	if error != nil {
 		fmt.Printf(kErrorCurrentDirectory, error)
 	}
-	RecurseDirectories(directory, nil, "go test")
+	return RecurseDirectories(directory, exclusions, kShellCommandInstallDependencies, kShellCommandRunTest)
+}
+
+// Recurses all directories and installs test dependencies
+func InstallTestDependencies() (int, int) {
+	directory, error := os.Getwd()
+	if error != nil {
+		fmt.Printf(kErrorCurrentDirectory, error)
+	}
+	return RecurseDirectories(directory, nil, kShellCommandInstallDependencies)
 }
 
 // Recurses all directories and runs commands
 // exclusions contains directories to be skipped
 // Multiple commands may be passed and each will be run
-func RecurseDirectories(directory string, exclusions []string, commands ...string) {
+func RecurseDirectories(directory string, exclusions []string, commands ...string) (int, int) {
+
+	testsRun := 0
+	testsFailed := 0
 
 	// If this directory is not contained in the exclusions slice
-	if success, _ := SliceContainsString(directory, exclusions); !success {
+	dirSplit := strings.Split(directory, "/")
+	dirName := dirSplit[len(dirSplit)-1]
+	if success, _ := SliceContainsString(dirName, exclusions); !success {
+
 		directoryHandle, error := os.Open(directory)
 		if error != nil {
 			fmt.Printf(kErrorRecursingDirectories, error)
@@ -194,27 +209,41 @@ func RecurseDirectories(directory string, exclusions []string, commands ...strin
 
 		testFileDetected := false
 		for _, file := range files {
+
 			if file.IsDir() {
-				RecurseDirectories(fmt.Sprintf("%s/%s", directory, file.Name()), exclusions, commands...)
+				tempTestsRun, tempTestsFailed := RecurseDirectories(fmt.Sprintf("%s/%s", directory, file.Name()), exclusions, commands...)
+				testsRun += tempTestsRun
+				testsFailed += tempTestsFailed
 			} else {
 				if testFileDetected == false && strings.Contains(file.Name(), "_test.go") {
 					testFileDetected = true
 				}
 			}
+
 		}
 
 		if testFileDetected {
+
+			testsRun++
+			fmt.Print(".")
 			for i := 0; i < len(commands); i++ {
-				fmt.Printf("Running: %s/%s\n", directory, commands[i])
-				command := exec.Command("go", "test")
-				command.Dir = directory
-				output, err := command.Output()
-				fmt.Printf("\n\noutput is: %s. Error is %s\n\n", output, err)
+
+				splitCommand := strings.Split(commands[i], " ")
+
+				command := splitCommand[0]
+				arguments := splitCommand[1:]
+
+				shellCommand := exec.Command(command, arguments...)
+				shellCommand.Dir = directory
+
+				if output, error := shellCommand.Output(); error != nil {
+					testsFailed++
+					fmt.Printf("\n\n%s\n\n", output)
+				}
 			}
 		}
-	} else {
-		fmt.Printf("Excluded: %s\n", directory)
 	}
+	return testsRun, testsFailed
 
 }
 
@@ -251,9 +280,13 @@ func main() {
 
 	switch command {
 	case kCommandRun:
-		//RunTests(subcommand, exclusions)
+		fmt.Printf("\nRunning tests")
+		testsRun, testsFailed := RunTests(exclusions)
+		fmt.Printf("\n%d tests run. %d tests succeeded. %d tests failed. [%.0f%% success]\n\n", testsRun, testsRun-testsFailed, testsFailed, (float32((testsRun-testsFailed))/float32(testsRun))*100)
 	case kCommandInstall:
-		InstallTestDependencies()
+		fmt.Printf("\nInstalling test dependencies")
+		testsRun, testsFailed := InstallTestDependencies()
+		fmt.Printf("\n%d installed. %d failed. [%.0f%% success]\n\n", testsRun-testsFailed, testsFailed, (float32((testsRun-testsFailed))/float32(testsRun))*100)
 	case kCommandExclude:
 		Exclude(subcommand, config)
 		fmt.Printf("\nExcluded: %s\n\n", subcommand)

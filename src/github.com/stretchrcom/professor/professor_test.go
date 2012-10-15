@@ -171,7 +171,3 @@ func TestFormatExclusionsForPrint(t *testing.T) {
 	Include("reavers", config)
 
 }
-
-func TestRecurseDirectories(t *testing.T) {
-	//TODO: Ask Mat how the hell I should test this
-}
