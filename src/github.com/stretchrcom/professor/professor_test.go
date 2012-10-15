@@ -49,14 +49,14 @@ func TestVerifyArguments(t *testing.T) {
 	success, details = VerifyArguments(arguments)
 
 	if assert.False(t, success, details) {
-		assert.Equal(t, details, fmt.Sprintf(kArgumentSubcommandRequired, arguments[1]))
+		assert.Equal(t, details, fmt.Sprintf(kArgumentErrorSubcommandRequired, arguments[1]))
 	}
 
 	arguments = []string{"professor", "include"}
 	success, details = VerifyArguments(arguments)
 
 	if assert.False(t, success, details) {
-		assert.Equal(t, details, fmt.Sprintf(kArgumentSubcommandRequired, arguments[1]))
+		assert.Equal(t, details, fmt.Sprintf(kArgumentErrorSubcommandRequired, arguments[1]))
 	}
 
 	// Test good input

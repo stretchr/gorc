@@ -9,7 +9,6 @@ import (
 	"strings"
 )
 
-// TODO: print useful information for the usage
 var kArgumentErrorUsage string = `Usage: professor command [subcommand]
 
 Valid commands are:
@@ -23,7 +22,7 @@ Valid commands are:
 
 var kArgumentErrorUnknownCommand string = "Unknown command: %s"
 var kArgumentErrorUnknownSubcommand string = "Unknown subcommand: %s"
-var kArgumentSubcommandRequired string = "%s requires a subcommand"
+var kArgumentErrorSubcommandRequired string = "%s requires a subcommand"
 
 var kErrorSavingFile = "There was an error attempting to save your configuration file."
 var kErrorRecursingDirectories = "There was an error when attempting to recurse directories: %s"
@@ -76,7 +75,7 @@ func VerifyArguments(arguments []string) (bool, string) {
 	// Verify that the command is valid
 	command := arguments[1]
 	if contains, _ := SliceContainsString(command, kCommandsRequiringSubcommands); contains && len(arguments) < 3 {
-		return false, fmt.Sprintf(kArgumentSubcommandRequired, command)
+		return false, fmt.Sprintf(kArgumentErrorSubcommandRequired, command)
 	}
 
 	command = arguments[1]
