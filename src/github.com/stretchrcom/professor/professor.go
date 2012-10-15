@@ -11,6 +11,7 @@ import (
 var kArgumentErrorUsage string = `usage`
 var kArgumentErrorUnknownCommand string = "Unknown command: %s"
 var kArgumentErrorUnknownSubcommand string = "Unknown subcommand: %s"
+var kArgumentSubcommandRequired string = "%s requires a subcommand"
 
 var kErrorSavingFile = "There was an error attempting to save your configuration file."
 
@@ -20,6 +21,7 @@ var kCommandExclude string = "exclude"
 var kCommandInclude string = "include"
 var kCommandExclusions string = "exclusions"
 var kValidCommands = []string{kCommandRun, kCommandInstall, kCommandExclude, kCommandInclude, kCommandExclusions}
+var kCommandsRequiringSubcommands = []string{kCommandExclude, kCommandInclude}
 
 var kSubcommandExcluded string = "excluded"
 var kSubcommandAll string = "all"
@@ -38,6 +40,15 @@ func SliceContainsString(target string, slice []string) (bool, int) {
 	return false, -1
 }
 
+// Returns a []string from a []interface{}
+func StringSliceFromInterfaceSlice(interfaceSlice []interface{}) []string {
+	retval := make([]string, len(interfaceSlice))
+	for i, str := range interfaceSlice {
+		retval[i] = str.(string)
+	}
+	return retval
+}
+
 // Verifies that the arguments passed are sane and returns the 
 // If the arguments are not sane, returns false and a string detailing the proper usage.
 func VerifyArguments(arguments []string) (bool, string) {
@@ -48,6 +59,11 @@ func VerifyArguments(arguments []string) (bool, string) {
 
 	// Verify that the command is valid
 	command := arguments[1]
+	if contains, _ := SliceContainsString(command, kCommandsRequiringSubcommands); contains && len(arguments) < 3 {
+		return false, fmt.Sprintf(kArgumentSubcommandRequired, command)
+	}
+
+	command = arguments[1]
 	if contains, _ := SliceContainsString(command, kValidCommands); !contains {
 		return false, fmt.Sprintf(kArgumentErrorUnknownCommand, command)
 	}
@@ -77,11 +93,6 @@ func DecodeJSON(data []byte, object interface{}) error {
 // Excludes a directory from testing
 func Exclude(directory string, config map[string]interface{}) {
 
-	// Make sure we have an object to work with
-	if config[kConfigKeyExclusions] == nil {
-		config[kConfigKeyExclusions] = make([]string, 0)
-	}
-
 	// If the directory isn't in the array, add it
 	exclusions := config[kConfigKeyExclusions].([]string)
 	if contains, _ := SliceContainsString(directory, exclusions); !contains || exclusions == nil {
@@ -94,11 +105,6 @@ func Exclude(directory string, config map[string]interface{}) {
 
 // Includes a directory in testing
 func Include(directory string, config map[string]interface{}) {
-
-	// Make sure we have an object to work with
-	if config[kConfigKeyExclusions] == nil {
-		config[kConfigKeyExclusions] = make([]string, 0)
-	}
 
 	// If the directory is in the array, remove it
 	exclusions := config[kConfigKeyExclusions].([]string)
@@ -146,19 +152,45 @@ func WriteConfig(config map[string]interface{}) {
 
 func main() {
 
+	arguments := os.Args
+
 	// Verify the arguments
-	if success, details := VerifyArguments(os.Args); !success {
+	if success, details := VerifyArguments(arguments); !success {
 		fmt.Printf("\n%s\n\n", details)
 	}
 
 	var config = make(map[string]interface{})
+	config[kConfigKeyExclusions] = make([]string, 0)
 
 	// If a configuration file exists, load and decode it		
 	if fileData, fileError := ioutil.ReadFile(kConfigFilename); fileError == nil {
 		if decodeError := DecodeJSON(fileData, &config); decodeError != nil {
 			fmt.Printf("There was an error parsing your configuration file: %s\n\n", decodeError)
 			os.Exit(1)
+		} else {
+			// Convert various bits of data to appropriate types
+			config[kConfigKeyExclusions] = StringSliceFromInterfaceSlice(config[kConfigKeyExclusions].([]interface{}))
 		}
+	}
+
+	//exclusions := config[kConfigKeyExclusions].([]string)
+	command := arguments[1]
+	subcommand := ""
+	if len(arguments) == 3 {
+		subcommand = arguments[2]
+	}
+
+	switch command {
+	case kCommandRun:
+		//RunTests(subcommand, exclusions)
+	case kCommandInstall:
+		//InstallTestDependencies()
+	case kCommandExclude:
+		Exclude(subcommand, config)
+	case kCommandInclude:
+		Include(subcommand, config)
+	case kCommandExclusions:
+		//PrintExclusions(config)
 	}
 
 }

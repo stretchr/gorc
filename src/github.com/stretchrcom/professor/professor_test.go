@@ -13,29 +13,50 @@ func TestVerifyArguments(t *testing.T) {
 	arguments := []string{"professor"}
 	success, details := VerifyArguments(arguments)
 
-	if assert.False(t, success) {
+	if assert.False(t, success, details) {
 		assert.Equal(t, details, kArgumentErrorUsage)
 	}
 
 	arguments = []string{"professor", "gorram", "browncoat", "harlot"}
 	success, details = VerifyArguments(arguments)
 
-	if assert.False(t, success) {
+	if assert.False(t, success, details) {
 		assert.Equal(t, details, kArgumentErrorUsage)
 	}
 
 	arguments = []string{"professor", "gorram"}
 	success, details = VerifyArguments(arguments)
 
-	if assert.False(t, success) {
+	if assert.False(t, success, details) {
 		assert.Equal(t, details, fmt.Sprintf(kArgumentErrorUnknownCommand, arguments[1]))
 	}
 
 	arguments = []string{"professor", "run", "fromTheLaw"}
 	success, details = VerifyArguments(arguments)
 
-	if assert.False(t, success) {
+	if assert.False(t, success, details) {
 		assert.Equal(t, details, fmt.Sprintf(kArgumentErrorUnknownSubcommand, arguments[2]))
+	}
+
+	arguments = []string{"professor", "run", "fromTheLaw"}
+	success, details = VerifyArguments(arguments)
+
+	if assert.False(t, success, details) {
+		assert.Equal(t, details, fmt.Sprintf(kArgumentErrorUnknownSubcommand, arguments[2]))
+	}
+
+	arguments = []string{"professor", "exclude"}
+	success, details = VerifyArguments(arguments)
+
+	if assert.False(t, success, details) {
+		assert.Equal(t, details, fmt.Sprintf(kArgumentSubcommandRequired, arguments[1]))
+	}
+
+	arguments = []string{"professor", "include"}
+	success, details = VerifyArguments(arguments)
+
+	if assert.False(t, success, details) {
+		assert.Equal(t, details, fmt.Sprintf(kArgumentSubcommandRequired, arguments[1]))
 	}
 
 	// Test good input
@@ -105,6 +126,7 @@ func TestDecodeJSON(t *testing.T) {
 func TestExclude(t *testing.T) {
 
 	var config = make(map[string]interface{})
+	config[kConfigKeyExclusions] = make([]string, 0)
 
 	Exclude("badger", config)
 
@@ -116,6 +138,7 @@ func TestExclude(t *testing.T) {
 func TestInclude(t *testing.T) {
 
 	var config = make(map[string]interface{})
+	config[kConfigKeyExclusions] = make([]string, 0)
 
 	Exclude("badger", config)
 	Exclude("reavers", config)
