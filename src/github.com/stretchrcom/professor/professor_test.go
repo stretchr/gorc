@@ -65,10 +65,6 @@ func TestVerifyArguments(t *testing.T) {
 	success, details = VerifyArguments(arguments)
 	assert.True(t, success, details)
 
-	arguments = []string{"professor", "run", "excluded"}
-	success, details = VerifyArguments(arguments)
-	assert.True(t, success, details)
-
 	arguments = []string{"professor", "run", "all"}
 	success, details = VerifyArguments(arguments)
 	assert.True(t, success, details)

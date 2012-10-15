@@ -27,9 +27,8 @@ var kCommandExclusions string = "exclusions"
 var kValidCommands = []string{kCommandRun, kCommandInstall, kCommandExclude, kCommandInclude, kCommandExclusions}
 var kCommandsRequiringSubcommands = []string{kCommandExclude, kCommandInclude}
 
-var kSubcommandExcluded string = "excluded"
 var kSubcommandAll string = "all"
-var kValidSubcommands = []string{kSubcommandExcluded, kSubcommandAll}
+var kValidSubcommands = []string{kSubcommandAll}
 
 var kConfigKeyExclusions = "exclusions"
 var kConfigFilename = ".professor"
@@ -166,11 +165,19 @@ func FormatExclusionsForPrint(exclusions []string) string {
 }
 
 // Recurses all directories and installes tests dependencies, then runs tests
-func RunTests(exclusions []string) (int, int) {
+func RunTests(subcommand string, exclusions []string) (int, int) {
 	directory, error := os.Getwd()
 	if error != nil {
 		fmt.Printf(kErrorCurrentDirectory, error)
 	}
+
+	// We have a subcommand
+	if len(subcommand) != 0 {
+		if subcommand == kSubcommandAll {
+			return RecurseDirectories(directory, nil, kShellCommandInstallDependencies, kShellCommandRunTest)
+		}
+	}
+
 	return RecurseDirectories(directory, exclusions, kShellCommandInstallDependencies, kShellCommandRunTest)
 }
 
@@ -281,7 +288,7 @@ func main() {
 	switch command {
 	case kCommandRun:
 		fmt.Printf("\nRunning tests")
-		testsRun, testsFailed := RunTests(exclusions)
+		testsRun, testsFailed := RunTests(subcommand, exclusions)
 		fmt.Printf("\n%d tests run. %d tests succeeded. %d tests failed. [%.0f%% success]\n\n", testsRun, testsRun-testsFailed, testsFailed, (float32((testsRun-testsFailed))/float32(testsRun))*100)
 	case kCommandInstall:
 		fmt.Printf("\nInstalling test dependencies")
