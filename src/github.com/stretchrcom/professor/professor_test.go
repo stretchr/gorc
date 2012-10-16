@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"github.com/stretchrcom/affirm/assert"
+	"github.com/stretchrcom/testify/assert"
 	"testing"
 )
 
