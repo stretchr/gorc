@@ -14,49 +14,49 @@ func TestVerifyArguments(t *testing.T) {
 	success, details := VerifyArguments(arguments)
 
 	if assert.False(t, success, details) {
-		assert.Equal(t, details, kArgumentErrorUsage)
+		assert.Equal(t, details, argumentErrorUsage)
 	}
 
 	arguments = []string{"professor", "gorram", "browncoat", "harlot"}
 	success, details = VerifyArguments(arguments)
 
 	if assert.False(t, success, details) {
-		assert.Equal(t, details, kArgumentErrorUsage)
+		assert.Equal(t, details, argumentErrorUsage)
 	}
 
 	arguments = []string{"professor", "gorram"}
 	success, details = VerifyArguments(arguments)
 
 	if assert.False(t, success, details) {
-		assert.Equal(t, details, fmt.Sprintf(kArgumentErrorUnknownCommand, arguments[1]))
+		assert.Equal(t, details, fmt.Sprintf(argumentErrorUnknownCommand, arguments[1]))
 	}
 
 	arguments = []string{"professor", "run", "fromTheLaw"}
 	success, details = VerifyArguments(arguments)
 
 	if assert.False(t, success, details) {
-		assert.Equal(t, details, fmt.Sprintf(kArgumentErrorUnknownSubcommand, arguments[2]))
+		assert.Equal(t, details, fmt.Sprintf(argumentErrorUnknownSubcommand, arguments[2]))
 	}
 
 	arguments = []string{"professor", "run", "fromTheLaw"}
 	success, details = VerifyArguments(arguments)
 
 	if assert.False(t, success, details) {
-		assert.Equal(t, details, fmt.Sprintf(kArgumentErrorUnknownSubcommand, arguments[2]))
+		assert.Equal(t, details, fmt.Sprintf(argumentErrorUnknownSubcommand, arguments[2]))
 	}
 
 	arguments = []string{"professor", "exclude"}
 	success, details = VerifyArguments(arguments)
 
 	if assert.False(t, success, details) {
-		assert.Equal(t, details, fmt.Sprintf(kArgumentErrorSubcommandRequired, arguments[1]))
+		assert.Equal(t, details, fmt.Sprintf(argumentErrorSubcommandRequired, arguments[1]))
 	}
 
 	arguments = []string{"professor", "include"}
 	success, details = VerifyArguments(arguments)
 
 	if assert.False(t, success, details) {
-		assert.Equal(t, details, fmt.Sprintf(kArgumentErrorSubcommandRequired, arguments[1]))
+		assert.Equal(t, details, fmt.Sprintf(argumentErrorSubcommandRequired, arguments[1]))
 	}
 
 	// Test good input
@@ -90,7 +90,7 @@ func TestVerifyArguments(t *testing.T) {
 func TestEncodeJSON(t *testing.T) {
 
 	var object = make(map[string]interface{})
-	object[kConfigKeyExclusions] = []string{"alliance", "badger"}
+	object[configKeyExclusions] = []string{"alliance", "badger"}
 
 	json, error := EncodeJSON(object)
 
@@ -103,7 +103,7 @@ func TestEncodeJSON(t *testing.T) {
 func TestDecodeJSON(t *testing.T) {
 
 	var object = make(map[string]interface{})
-	object[kConfigKeyExclusions] = []string{"alliance", "badger"}
+	object[configKeyExclusions] = []string{"alliance", "badger"}
 
 	var decodedObject map[string]interface{}
 
@@ -122,46 +122,46 @@ func TestDecodeJSON(t *testing.T) {
 func TestExclude(t *testing.T) {
 
 	var config = make(map[string]interface{})
-	config[kConfigKeyExclusions] = make([]string, 0)
+	config[configKeyExclusions] = make([]string, 0)
 
 	Exclude("badger", config)
 
-	assert.Equal(t, 1, len(config[kConfigKeyExclusions].([]string)))
-	assert.Equal(t, config[kConfigKeyExclusions].([]string)[0], "badger")
+	assert.Equal(t, 1, len(config[configKeyExclusions].([]string)))
+	assert.Equal(t, config[configKeyExclusions].([]string)[0], "badger")
 
 }
 
 func TestInclude(t *testing.T) {
 
 	var config = make(map[string]interface{})
-	config[kConfigKeyExclusions] = make([]string, 0)
+	config[configKeyExclusions] = make([]string, 0)
 
 	Exclude("badger", config)
 	Exclude("reavers", config)
 
-	assert.Equal(t, 2, len(config[kConfigKeyExclusions].([]string)), fmt.Sprintf("%v", config[kConfigKeyExclusions].([]string)))
+	assert.Equal(t, 2, len(config[configKeyExclusions].([]string)), fmt.Sprintf("%v", config[configKeyExclusions].([]string)))
 
 	Include("reavers", config)
 
-	assert.Equal(t, 1, len(config[kConfigKeyExclusions].([]string)), fmt.Sprintf("%v", config[kConfigKeyExclusions].([]string)))
+	assert.Equal(t, 1, len(config[configKeyExclusions].([]string)), fmt.Sprintf("%v", config[configKeyExclusions].([]string)))
 
 	Include("badger", config)
 
-	assert.Equal(t, 0, len(config[kConfigKeyExclusions].([]string)), fmt.Sprintf("%v", config[kConfigKeyExclusions].([]string)))
+	assert.Equal(t, 0, len(config[configKeyExclusions].([]string)), fmt.Sprintf("%v", config[configKeyExclusions].([]string)))
 
 }
 
 func TestFormatExclusionsForPrint(t *testing.T) {
 
 	var config = make(map[string]interface{})
-	config[kConfigKeyExclusions] = make([]string, 0)
+	config[configKeyExclusions] = make([]string, 0)
 
 	Exclude("badger", config)
 	Exclude("reavers", config)
 
 	exclusionString := "Excluded Directories:\n\tbadger\n\treavers"
 
-	assert.Equal(t, FormatExclusionsForPrint(config[kConfigKeyExclusions].([]string)), exclusionString)
+	assert.Equal(t, FormatExclusionsForPrint(config[configKeyExclusions].([]string)), exclusionString)
 
 	Include("badger", config)
 	Include("reavers", config)

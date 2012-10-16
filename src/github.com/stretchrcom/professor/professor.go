@@ -9,8 +9,8 @@ import (
 	"strings"
 )
 
-// kArgumentErrorUsage is printed when no arguments are passed to the program.
-var kArgumentErrorUsage string = `Professor run or installs test dependencies, recursively, starting from the current working directory
+// argumentErrorUsage is printed when no arguments are passed to the program.
+var argumentErrorUsage string = `Professor run or installs test dependencies, recursively, starting from the current working directory
 
 Usage: professor command [subcommand]
 
@@ -26,62 +26,62 @@ Valid commands are:
 Version 1.0`
 
 var (
-	// kArgumentErrorUnknownCommand is printed when an unknown command is passed to the program.
-	kArgumentErrorUnknownCommand string = "Unknown command: %s"
+	// argumentErrorUnknownCommand is printed when an unknown command is passed to the program.
+	argumentErrorUnknownCommand string = "Unknown command: %s"
 
-	// kArgumentErrorUnknownSubcommandCommand is printed when an unknown subcommand is passed to the program.
-	kArgumentErrorUnknownSubcommand string = "Unknown subcommand: %s"
+	// argumentErrorUnknownSubcommandCommand is printed when an unknown subcommand is passed to the program.
+	argumentErrorUnknownSubcommand string = "Unknown subcommand: %s"
 
-	// kArgumentErrorSubcommandRequired is printed when a subcommand is required, but was not passed.
-	kArgumentErrorSubcommandRequired string = "%s requires a subcommand"
+	// argumentErrorSubcommandRequired is printed when a subcommand is required, but was not passed.
+	argumentErrorSubcommandRequired string = "%s requires a subcommand"
 
-	// kErrorSavingFile is printed when an error occurs attempting to save the configuration file.
-	kErrorSavingFile = "There was an error attempting to save your configuration file."
+	// errorSavingFile is printed when an error occurs attempting to save the configuration file.
+	errorSavingFile = "There was an error attempting to save your configuration file."
 
-	// kErrorRecursingDirectories is printed when an error occurs recursing through the directory structure.
-	kErrorRecursingDirectories = "There was an error when attempting to recurse directories: %s"
+	// errorRecursingDirectories is printed when an error occurs recursing through the directory structure.
+	errorRecursingDirectories = "There was an error when attempting to recurse directories: %s"
 
-	// kErrorCurrentDirectory is printed when an error occurs attempting to get the current working directory.
-	kErrorCurrentDirectory = "There was an error attempting to get directory in which professor is being run: %s"
+	// errorCurrentDirectory is printed when an error occurs attempting to get the current working directory.
+	errorCurrentDirectory = "There was an error attempting to get directory in which professor is being run: %s"
 
-	// kCommandRun is the string for the run command.
-	kCommandRun string = "run"
+	// commandRun is the string for the run command.
+	commandRun string = "run"
 
-	// kCommandInstall is the string for the install command.
-	kCommandInstall string = "install"
+	// commandInstall is the string for the install command.
+	commandInstall string = "install"
 
-	// kCommandExclude is the string for the exclude command.
-	kCommandExclude string = "exclude"
+	// commandExclude is the string for the exclude command.
+	commandExclude string = "exclude"
 
-	// kCommandInclude is the string for the include command.
-	kCommandInclude string = "include"
+	// commandInclude is the string for the include command.
+	commandInclude string = "include"
 
-	// kCommandExclusions is the string for the exclusions command.
-	kCommandExclusions string = "exclusions"
+	// commandExclusions is the string for the exclusions command.
+	commandExclusions string = "exclusions"
 
-	// kValidCommands contains the valid top level commands. Used to verify the top level command is sane.
-	kValidCommands = []string{kCommandRun, kCommandInstall, kCommandExclude, kCommandInclude, kCommandExclusions}
+	// validCommands contains the valid top level commands. Used to verify the top level command is sane.
+	validCommands = []string{commandRun, commandInstall, commandExclude, commandInclude, commandExclusions}
 
-	// kCommandsRequiringSubcommands contains the top level commands that require a subcommand. Used to enforce subcommands when required.
-	kCommandsRequiringSubcommands = []string{kCommandExclude, kCommandInclude}
+	// commandsRequiringSubcommands contains the top level commands that require a subcommand. Used to enforce subcommands when required.
+	commandsRequiringSubcommands = []string{commandExclude, commandInclude}
 
-	// kSubcommandAll is the string for the all subcommand. Used with the run command.
-	kSubcommandAll string = "all"
+	// subcommandAll is the string for the all subcommand. Used with the run command.
+	subcommandAll string = "all"
 
-	// kValidSubcommands contains the valid subcommands. Used to verify subcommand is sane.
-	kValidSubcommands = []string{kSubcommandAll}
+	// validSubcommands contains the valid subcommands. Used to verify subcommand is sane.
+	validSubcommands = []string{subcommandAll}
 
-	// kConfigKeyExclusions is the string for the key in the configuration object at which the exclusions list is stored
-	kConfigKeyExclusions = "exclusions"
+	// configKeyExclusions is the string for the key in the configuration object at which the exclusions list is stored
+	configKeyExclusions = "exclusions"
 
-	// kConfigFilename is the string for the name of the professor configuration file
-	kConfigFilename = ".professor"
+	// configFilename is the string for the name of the professor configuration file
+	configFilename = ".professor"
 
-	// kShellCommandInstallDependencies is the string for the shell command to run when installing dependencies
-	kShellCommandInstallDependencies string = "go test -i"
+	// shellCommandInstallDependencies is the string for the shell command to run when installing dependencies
+	shellCommandInstallDependencies string = "go test -i"
 
-	// kShellCommandRunTest is the string for the shell command to run when executing tests
-	kShellCommandRunTest string = "go test"
+	// shellCommandRunTest is the string for the shell command to run when executing tests
+	shellCommandRunTest string = "go test"
 )
 
 // SliceContainsString determines if a slice of string contains the target string
@@ -108,27 +108,27 @@ func StringSliceFromInterfaceSlice(interfaceSlice []interface{}) []string {
 func VerifyArguments(arguments []string) (bool, string) {
 
 	if len(arguments) == 1 || len(arguments) > 3 {
-		return false, kArgumentErrorUsage
+		return false, argumentErrorUsage
 	}
 
 	// Verify that the command is valid
 	command := arguments[1]
-	if contains, _ := SliceContainsString(command, kCommandsRequiringSubcommands); contains && len(arguments) < 3 {
-		return false, fmt.Sprintf(kArgumentErrorSubcommandRequired, command)
+	if contains, _ := SliceContainsString(command, commandsRequiringSubcommands); contains && len(arguments) < 3 {
+		return false, fmt.Sprintf(argumentErrorSubcommandRequired, command)
 	}
 
 	command = arguments[1]
-	if contains, _ := SliceContainsString(command, kValidCommands); !contains {
-		return false, fmt.Sprintf(kArgumentErrorUnknownCommand, command)
+	if contains, _ := SliceContainsString(command, validCommands); !contains {
+		return false, fmt.Sprintf(argumentErrorUnknownCommand, command)
 	}
 
 	if len(arguments) > 2 {
 		subcommand := arguments[2]
-		contains, _ := SliceContainsString(subcommand, kValidSubcommands)
-		if command != kCommandExclude &&
-			command != kCommandInclude &&
+		contains, _ := SliceContainsString(subcommand, validSubcommands)
+		if command != commandExclude &&
+			command != commandInclude &&
 			!contains {
-			return false, fmt.Sprintf(kArgumentErrorUnknownSubcommand, subcommand)
+			return false, fmt.Sprintf(argumentErrorUnknownSubcommand, subcommand)
 		}
 	}
 	return true, ""
@@ -148,9 +148,9 @@ func DecodeJSON(data []byte, object interface{}) error {
 func Exclude(directory string, config map[string]interface{}) {
 
 	// If the directory isn't in the array, add it
-	exclusions := config[kConfigKeyExclusions].([]string)
+	exclusions := config[configKeyExclusions].([]string)
 	if contains, _ := SliceContainsString(directory, exclusions); !contains || exclusions == nil {
-		config[kConfigKeyExclusions] = append(exclusions, directory)
+		config[configKeyExclusions] = append(exclusions, directory)
 	}
 
 	WriteConfig(config)
@@ -161,9 +161,9 @@ func Exclude(directory string, config map[string]interface{}) {
 func Include(directory string, config map[string]interface{}) {
 
 	// If the directory is in the array, remove it
-	exclusions := config[kConfigKeyExclusions].([]string)
+	exclusions := config[configKeyExclusions].([]string)
 	if contains, index := SliceContainsString(directory, exclusions); contains {
-		config[kConfigKeyExclusions] = append(exclusions[:index], exclusions[index+1:]...)
+		config[configKeyExclusions] = append(exclusions[:index], exclusions[index+1:]...)
 	}
 
 	WriteConfig(config)
@@ -174,7 +174,7 @@ func ConfigEmpty(config map[string]interface{}) bool {
 
 	empty := false
 
-	if len(config[kConfigKeyExclusions].([]string)) == 0 {
+	if len(config[configKeyExclusions].([]string)) == 0 {
 		empty = true
 	}
 
@@ -187,19 +187,19 @@ func WriteConfig(config map[string]interface{}) {
 
 	// The configuration is empty. Delete the file.
 	if ConfigEmpty(config) {
-		os.Remove(kConfigFilename)
+		os.Remove(configFilename)
 	} else {
 
 		data, error := EncodeJSON(config)
 
 		if error != nil {
-			fmt.Printf("\n%s\n\n", kErrorSavingFile)
+			fmt.Printf("\n%s\n\n", errorSavingFile)
 		}
 
-		error = ioutil.WriteFile(kConfigFilename, data, 0644)
+		error = ioutil.WriteFile(configFilename, data, 0644)
 
 		if error != nil {
-			fmt.Printf("\n%s\n\n", kErrorSavingFile)
+			fmt.Printf("\n%s\n\n", errorSavingFile)
 		}
 	}
 
@@ -217,27 +217,27 @@ func FormatExclusionsForPrint(exclusions []string) string {
 func RunTests(subcommand string, exclusions []string) (int, int) {
 	directory, error := os.Getwd()
 	if error != nil {
-		fmt.Printf(kErrorCurrentDirectory, error)
+		fmt.Printf(errorCurrentDirectory, error)
 	}
 
 	// We have a subcommand
 	if len(subcommand) != 0 {
-		if subcommand == kSubcommandAll {
+		if subcommand == subcommandAll {
 			// Pass nil as exclusions to run all tests
-			return RecurseDirectories(directory, nil, kShellCommandInstallDependencies, kShellCommandRunTest)
+			return RecurseDirectories(directory, nil, shellCommandInstallDependencies, shellCommandRunTest)
 		}
 	}
 
-	return RecurseDirectories(directory, exclusions, kShellCommandInstallDependencies, kShellCommandRunTest)
+	return RecurseDirectories(directory, exclusions, shellCommandInstallDependencies, shellCommandRunTest)
 }
 
 // InstallTestDependencies recurses all directories and installs test dependencies
 func InstallTestDependencies() (int, int) {
 	directory, error := os.Getwd()
 	if error != nil {
-		fmt.Printf(kErrorCurrentDirectory, error)
+		fmt.Printf(errorCurrentDirectory, error)
 	}
-	return RecurseDirectories(directory, nil, kShellCommandInstallDependencies)
+	return RecurseDirectories(directory, nil, shellCommandInstallDependencies)
 }
 
 // RecurseDirectories recurses all directories and runs the given commands
@@ -255,12 +255,12 @@ func RecurseDirectories(directory string, exclusions []string, commands ...strin
 
 		directoryHandle, error := os.Open(directory)
 		if error != nil {
-			fmt.Printf(kErrorRecursingDirectories, error)
+			fmt.Printf(errorRecursingDirectories, error)
 			os.Exit(1)
 		}
 		files, error := directoryHandle.Readdir(-1)
 		if error != nil {
-			fmt.Printf(kErrorRecursingDirectories, error)
+			fmt.Printf(errorRecursingDirectories, error)
 			os.Exit(1)
 		}
 
@@ -327,20 +327,20 @@ func main() {
 
 	// Set up the basic configuration object in case we have no saved configuration file
 	var config = make(map[string]interface{})
-	config[kConfigKeyExclusions] = make([]string, 0)
+	config[configKeyExclusions] = make([]string, 0)
 
 	// If a configuration file exists, load and decode it		
-	if fileData, fileError := ioutil.ReadFile(kConfigFilename); fileError == nil {
+	if fileData, fileError := ioutil.ReadFile(configFilename); fileError == nil {
 		if decodeError := DecodeJSON(fileData, &config); decodeError != nil {
 			fmt.Printf("There was an error parsing your configuration file: %s\n\n", decodeError)
 			os.Exit(1)
 		} else {
 			// Convert the []interface{} to []string to make life easier
-			config[kConfigKeyExclusions] = StringSliceFromInterfaceSlice(config[kConfigKeyExclusions].([]interface{}))
+			config[configKeyExclusions] = StringSliceFromInterfaceSlice(config[configKeyExclusions].([]interface{}))
 		}
 	}
 
-	exclusions := config[kConfigKeyExclusions].([]string)
+	exclusions := config[configKeyExclusions].([]string)
 	command := arguments[1]
 	subcommand := ""
 	if len(arguments) == 3 {
@@ -348,21 +348,21 @@ func main() {
 	}
 
 	switch command {
-	case kCommandRun:
+	case commandRun:
 		fmt.Printf("\nRunning tests")
 		testsRun, testsFailed := RunTests(subcommand, exclusions)
 		fmt.Printf("\n%d tests run. %d tests succeeded. %d tests failed. [%.0f%% success]\n\n", testsRun, testsRun-testsFailed, testsFailed, (float32((testsRun-testsFailed))/float32(testsRun))*100)
-	case kCommandInstall:
+	case commandInstall:
 		fmt.Printf("\nInstalling test dependencies")
 		testsRun, testsFailed := InstallTestDependencies()
 		fmt.Printf("\n%d installed. %d failed. [%.0f%% success]\n\n", testsRun-testsFailed, testsFailed, (float32((testsRun-testsFailed))/float32(testsRun))*100)
-	case kCommandExclude:
+	case commandExclude:
 		Exclude(subcommand, config)
 		fmt.Printf("\nExcluded: %s\n\n", subcommand)
-	case kCommandInclude:
+	case commandInclude:
 		Include(subcommand, config)
 		fmt.Printf("\nIncluded: %s\n\n", subcommand)
-	case kCommandExclusions:
+	case commandExclusions:
 		excludedPackages := FormatExclusionsForPrint(exclusions)
 		fmt.Printf("\n%s\n\n", excludedPackages)
 	}
