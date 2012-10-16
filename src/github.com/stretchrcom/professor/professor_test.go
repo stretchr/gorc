@@ -103,15 +103,14 @@ func TestEncodeJSON(t *testing.T) {
 func TestDecodeJSON(t *testing.T) {
 
 	var object = make(map[string]interface{})
-	object[configKeyExclusions] = []string{"alliance", "badger"}
+	object[configKeyExclusions] = []interface{}{"alliance", "badger"}
 
 	var decodedObject map[string]interface{}
 
 	error := DecodeJSON([]byte(`{"exclusions":["alliance","badger"]}`), &decodedObject)
 
 	if assert.Nil(t, error) {
-		//TODO: fix assert.Equal to make this work
-		//assert.Equal(t, object, decodedObject)
+		assert.Equal(t, object, decodedObject)
 	}
 
 	error = DecodeJSON([]byte(`whee{}{[[;;:`), &decodedObject)
