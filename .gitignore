@@ -22,9 +22,3 @@ _testmain.go
 *.exe
 
 .DS_Store
-
-src/github.com/stretchrcom/professor/.professor
-
-.professor
-
-src/github.com/stretchrcom/professor/professor
