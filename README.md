@@ -17,14 +17,8 @@ Before installation, please ensure that your GOPATH is [set properly](http://gol
 To install gort, use `go get`:
 
     go get github.com/stretchrcom/gort
-
-This will place gort in $GOPATH/src/gort. Navigate to this directory, and run:
-
-	go install
 	
-`go install` should install gort to $GOPATH/bin.
-
-Complete! You are now ready to use gort!
+`go install` should install gort to $GOPATH/bin. In some cases, go will not use $GOPATH, and instead attempts to install to $GOBIN. If this happens, you can grant it permission to do so, or simply build and copy gort manually.
 
 
 Usage
