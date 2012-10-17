@@ -18,7 +18,9 @@ To install Professor, use `go get`:
 
     go get github.com/stretchrcom/professor
 	
-`go get` should install Professor to $GOPATH/bin. It may attempt to install to $GOBIN instead, however. If this happens, you can manually copy the `professor` file to $GOPATH/bin.
+`go get` should install Professor to $GOPATH/bin. 
+
+It may attempt to install to $GOBIN instead, however. If this happens, you can either build `professor` manually and copy the `professor` file to $GOPATH/bin, or call `sudo go get` to install to $GOBIN.
 
 Complete! You are now ready to use Professor!
 
