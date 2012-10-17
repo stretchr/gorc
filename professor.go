@@ -16,8 +16,8 @@ Usage: professor command [subcommand]
 
 Valid commands are:
 
-	run - Runs tests
-	run [all] - Runs tests, including excluded directories
+	test - Runs tests
+	test [all] - Runs tests, including excluded directories
 	install - Installs dependencies for tests
 	exclude <directory name> - Excludes a directory from recursion
 	include <directory name> - Includes a directory in recursion
@@ -45,7 +45,7 @@ var (
 	errorCurrentDirectory = "There was an error attempting to get directory in which professor is being run: %s"
 
 	// commandRun is the string for the run command.
-	commandRun string = "run"
+	commandRun string = "test"
 
 	// commandInstall is the string for the install command.
 	commandInstall string = "install"
@@ -301,7 +301,7 @@ func RecurseDirectories(directory string, exclusions []string, commands ...strin
 				if output, error := shellCommand.CombinedOutput(); error != nil {
 
 					if len(arguments) == 1 {
-					testsFailed++
+						testsFailed++
 					}
 
 					succeeded = false

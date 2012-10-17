@@ -31,14 +31,14 @@ func TestVerifyArguments(t *testing.T) {
 		assert.Equal(t, details, fmt.Sprintf(argumentErrorUnknownCommand, arguments[1]))
 	}
 
-	arguments = []string{"professor", "run", "fromTheLaw"}
+	arguments = []string{"professor", "test", "fromTheLaw"}
 	success, details = VerifyArguments(arguments)
 
 	if assert.False(t, success, details) {
 		assert.Equal(t, details, fmt.Sprintf(argumentErrorUnknownSubcommand, arguments[2]))
 	}
 
-	arguments = []string{"professor", "run", "fromTheLaw"}
+	arguments = []string{"professor", "test", "fromTheLaw"}
 	success, details = VerifyArguments(arguments)
 
 	if assert.False(t, success, details) {
@@ -61,11 +61,11 @@ func TestVerifyArguments(t *testing.T) {
 
 	// Test good input
 
-	arguments = []string{"professor", "run"}
+	arguments = []string{"professor", "test"}
 	success, details = VerifyArguments(arguments)
 	assert.True(t, success, details)
 
-	arguments = []string{"professor", "run", "all"}
+	arguments = []string{"professor", "test", "all"}
 	success, details = VerifyArguments(arguments)
 	assert.True(t, success, details)
 
