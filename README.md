@@ -1,11 +1,11 @@
-Professor - go test -r
+gort - go test -r
 ===================================
 
-Professor is a go program that installs test dependencies and/or runs tests, recursively, starting from the working directory.
+gort is a go program that installs test dependencies and/or runs tests, recursively, starting from the working directory.
 
-Professor allows you to run all the tests in a multi-package directory structure with one command. As it works, it will display a '.' for each successful test and print out any failures. At the end of the run, professor will give you a summary of tests run, tests succeeded and tests failed.
+gort allows you to run all the tests in a multi-package directory structure with one command. As it works, it will display a '.' for each successful test and print out any failures. At the end of the run, gort will give you a summary of tests run, tests succeeded and tests failed.
 
-Professor pairs wonderfully with our testing framework, [Testify](http://github.com/stretchrcom/testify).
+gort pairs wonderfully with our testing framework, [Testify](http://github.com/stretchrcom/testify).
 
 For an introduction to writing test code in Go, see the [Go Testing Documentation](http://golang.org/doc/code.html#Testing).
 
@@ -14,35 +14,35 @@ Installation
 
 Before installation, please ensure that your GOPATH is [set properly](http://golang.org/doc/code.html#tmp_2).
 
-To install Professor, use `go get`:
+To install gort, use `go get`:
 
-    go get github.com/stretchrcom/professor
+    go get github.com/stretchrcom/gort
 
-This will place Professor in $GOPATH/src/professor. Navigate to this directory, and run:
+This will place gort in $GOPATH/src/gort. Navigate to this directory, and run:
 
 	go install
 	
-`go install` should install Professor to $GOPATH/bin.
+`go install` should install gort to $GOPATH/bin.
 
-Complete! You are now ready to use Professor!
+Complete! You are now ready to use gort!
 
 
 Usage
 =====
 
-Using Professor is easy. Just execute the command:
+Using gort is easy. Just execute the command:
 
-	professor test
+	gort test
 
-Professor will recurse the directory structure and run `go test -i` & `go test` for each directory that contains tests.
+gort will recurse the directory structure and run `go test -i` & `go test` for each directory that contains tests.
 
 If there is a directory that contains tests you don't wish to run, simply exclude it:
 
-	professor exclude testify
+	gort exclude testify
 	
 Now, when you run tests, the directory "testify" will not be recursed, and no tests inside it or its subdirectories will be run.
 
-Professor has some more commands that are not listed here. To see them all, simply run `professor` with no arguments
+gort has some more commands that are not listed here. To see them all, simply run `gort` with no arguments
 
 
 ------

@@ -10,49 +10,49 @@ func TestVerifyArguments(t *testing.T) {
 
 	// Test bad input
 
-	arguments := []string{"professor"}
+	arguments := []string{"gort"}
 	success, details := VerifyArguments(arguments)
 
 	if assert.False(t, success, details) {
 		assert.Equal(t, details, argumentErrorUsage)
 	}
 
-	arguments = []string{"professor", "gorram", "browncoat", "harlot"}
+	arguments = []string{"gort", "gorram", "browncoat", "harlot"}
 	success, details = VerifyArguments(arguments)
 
 	if assert.False(t, success, details) {
 		assert.Equal(t, details, argumentErrorUsage)
 	}
 
-	arguments = []string{"professor", "gorram"}
+	arguments = []string{"gort", "gorram"}
 	success, details = VerifyArguments(arguments)
 
 	if assert.False(t, success, details) {
 		assert.Equal(t, details, fmt.Sprintf(argumentErrorUnknownCommand, arguments[1]))
 	}
 
-	arguments = []string{"professor", "test", "fromTheLaw"}
+	arguments = []string{"gort", "test", "fromTheLaw"}
 	success, details = VerifyArguments(arguments)
 
 	if assert.False(t, success, details) {
 		assert.Equal(t, details, fmt.Sprintf(argumentErrorUnknownSubcommand, arguments[2]))
 	}
 
-	arguments = []string{"professor", "test", "fromTheLaw"}
+	arguments = []string{"gort", "test", "fromTheLaw"}
 	success, details = VerifyArguments(arguments)
 
 	if assert.False(t, success, details) {
 		assert.Equal(t, details, fmt.Sprintf(argumentErrorUnknownSubcommand, arguments[2]))
 	}
 
-	arguments = []string{"professor", "exclude"}
+	arguments = []string{"gort", "exclude"}
 	success, details = VerifyArguments(arguments)
 
 	if assert.False(t, success, details) {
 		assert.Equal(t, details, fmt.Sprintf(argumentErrorSubcommandRequired, arguments[1]))
 	}
 
-	arguments = []string{"professor", "include"}
+	arguments = []string{"gort", "include"}
 	success, details = VerifyArguments(arguments)
 
 	if assert.False(t, success, details) {
@@ -61,27 +61,31 @@ func TestVerifyArguments(t *testing.T) {
 
 	// Test good input
 
-	arguments = []string{"professor", "test"}
+	arguments = []string{"gort", "test"}
 	success, details = VerifyArguments(arguments)
 	assert.True(t, success, details)
 
-	arguments = []string{"professor", "test", "all"}
+	arguments = []string{"gort", "help"}
 	success, details = VerifyArguments(arguments)
 	assert.True(t, success, details)
 
-	arguments = []string{"professor", "install"}
+	arguments = []string{"gort", "test", "all"}
 	success, details = VerifyArguments(arguments)
 	assert.True(t, success, details)
 
-	arguments = []string{"professor", "exclude", "package"}
+	arguments = []string{"gort", "install"}
 	success, details = VerifyArguments(arguments)
 	assert.True(t, success, details)
 
-	arguments = []string{"professor", "include", "package"}
+	arguments = []string{"gort", "exclude", "package"}
 	success, details = VerifyArguments(arguments)
 	assert.True(t, success, details)
 
-	arguments = []string{"professor", "exclusions"}
+	arguments = []string{"gort", "include", "package"}
+	success, details = VerifyArguments(arguments)
+	assert.True(t, success, details)
+
+	arguments = []string{"gort", "exclusions"}
 	success, details = VerifyArguments(arguments)
 	assert.True(t, success, details)
 
