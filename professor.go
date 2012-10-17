@@ -355,7 +355,7 @@ func main() {
 	case commandRun:
 		fmt.Printf("\nRunning tests")
 		testsRun, testsFailed := RunTests(subcommand, exclusions)
-		fmt.Printf("\n\n%d tests run. %d tests succeeded. %d tests failed. [%.0f%% success]\n\n", testsRun, testsRun-testsFailed, testsFailed, (float32((testsRun-testsFailed))/float32(testsRun))*100)
+		fmt.Printf("\n\n%d run. %d succeeded. %d failed. [%.0f%% success]\n\n", testsRun, testsRun-testsFailed, testsFailed, (float32((testsRun-testsFailed))/float32(testsRun))*100)
 	case commandInstall:
 		fmt.Printf("\nInstalling test dependencies")
 		testsRun, testsFailed := InstallTestDependencies()
