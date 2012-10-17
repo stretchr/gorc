@@ -18,7 +18,7 @@ To install gort, use `go get`:
 
     go get github.com/stretchrcom/gort
 	
-`go install` should install gort to $GOPATH/bin. In some cases, go will not use $GOPATH, and instead attempts to install to $GOBIN. If this happens, you can grant it permission to do so, or simply build and copy gort manually.
+`go install` should install gort to $GOPATH/bin. In some cases, go will not use $GOPATH, and instead attempts to install to $GOBIN. If this happens, you can grant it permission to do so, or simply build and copy gort to $GOPATH/bin manually.
 
 
 Usage
