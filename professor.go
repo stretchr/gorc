@@ -10,7 +10,7 @@ import (
 )
 
 // argumentErrorUsage is printed when no arguments are passed to the program.
-var argumentErrorUsage string = `Professor run or installs test dependencies, recursively, starting from the current working directory
+var argumentErrorUsage string = `Professor runs or installs test dependencies, recursively, starting from the current working directory
 
 Usage: professor command [subcommand]
 
@@ -298,11 +298,15 @@ func RecurseDirectories(directory string, exclusions []string, commands ...strin
 				shellCommand := exec.Command(command, arguments...)
 				shellCommand.Dir = directory
 
-				if output, error := shellCommand.Output(); error != nil {
-					testsFailed++
+				if output, error := shellCommand.CombinedOutput(); error != nil {
+
+					if len(arguments) == 1 {
+						testsFailed++
+					}
+
 					succeeded = false
 					// Test failed, print the test output
-					fmt.Printf("\n\n%s\n\n", output)
+					fmt.Printf("\n\n%s", output)
 				}
 			}
 			if succeeded {
@@ -351,7 +355,7 @@ func main() {
 	case commandRun:
 		fmt.Printf("\nRunning tests")
 		testsRun, testsFailed := RunTests(subcommand, exclusions)
-		fmt.Printf("\n%d tests run. %d tests succeeded. %d tests failed. [%.0f%% success]\n\n", testsRun, testsRun-testsFailed, testsFailed, (float32((testsRun-testsFailed))/float32(testsRun))*100)
+		fmt.Printf("\n\n%d tests run. %d tests succeeded. %d tests failed. [%.0f%% success]\n\n", testsRun, testsRun-testsFailed, testsFailed, (float32((testsRun-testsFailed))/float32(testsRun))*100)
 	case commandInstall:
 		fmt.Printf("\nInstalling test dependencies")
 		testsRun, testsFailed := InstallTestDependencies()
