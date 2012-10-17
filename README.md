@@ -42,7 +42,9 @@ If there is a directory that contains tests you don't wish to run, simply exclud
 	
 Now, when you run tests, the directory "testify" will not be recursed, and no tests inside it or its subdirectories will be run.
 
-gort has some more commands that are not listed here. To see them all, simply run `gort` with no arguments
+gort has some more commands that are not listed here. To see them all, run:
+
+	gort help
 
 
 ------
