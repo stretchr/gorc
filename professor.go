@@ -10,9 +10,9 @@ import (
 )
 
 // argumentErrorUsage is printed when no arguments are passed to the program.
-var argumentErrorUsage string = `Professor installs dependencies and/or runs tests, recursively, starting from the current working directory
+var argumentErrorUsage string = `gort installs dependencies and/or runs tests, recursively, starting from the current working directory
 
-Usage: professor command [subcommand]
+Usage: gort command [subcommand]
 
 Valid commands are:
 
@@ -42,7 +42,7 @@ var (
 	errorRecursingDirectories = "There was an error when attempting to recurse directories: %s"
 
 	// errorCurrentDirectory is printed when an error occurs attempting to get the current working directory.
-	errorCurrentDirectory = "There was an error attempting to get directory in which professor is being run: %s"
+	errorCurrentDirectory = "There was an error attempting to get directory in which gort is being run: %s"
 
 	// commandRun is the string for the run command.
 	commandRun string = "test"
@@ -74,8 +74,8 @@ var (
 	// configKeyExclusions is the string for the key in the configuration object at which the exclusions list is stored
 	configKeyExclusions = "exclusions"
 
-	// configFilename is the string for the name of the professor configuration file
-	configFilename = ".professor"
+	// configFilename is the string for the name of the gort configuration file
+	configFilename = ".gort"
 
 	// shellCommandInstallDependencies is the string for the shell command to run when installing dependencies
 	shellCommandInstallDependencies string = "go test -i"

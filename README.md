@@ -1,11 +1,11 @@
-Professor - go test -r
+gort - go test -r
 ===================================
 
-Professor is a go program that installs test dependencies and/or runs tests, recursively, starting from the working directory.
+gort is a go program that installs test dependencies and/or runs tests, recursively, starting from the working directory.
 
-Professor allows you to run all the tests in a multi-package directory structure with one command. As it works, it will display a '.' for each successful test and print out any failures. At the end of the run, professor will give you a summary of tests run, tests succeeded and tests failed.
+gort allows you to run all the tests in a multi-package directory structure with one command. As it works, it will display a '.' for each successful test and print out any failures. At the end of the run, gort will give you a summary of tests run, tests succeeded and tests failed.
 
-Professor pairs wonderfully with our testing framework, [Testify](http://github.com/stretchrcom/testify).
+gort pairs wonderfully with our testing framework, [Testify](http://github.com/stretchrcom/testify).
 
 For an introduction to writing test code in Go, see the [Go Testing Documentation](http://golang.org/doc/code.html#Testing).
 
@@ -14,35 +14,35 @@ Installation
 
 Before installation, please ensure that your GOPATH is [set properly](http://golang.org/doc/code.html#tmp_2).
 
-To install Professor, use `go get`:
+To install gort, use `go get`:
 
-    go get github.com/stretchrcom/professor
+    go get github.com/stretchrcom/gort
 	
-`go get` should install Professor to $GOPATH/bin. 
+`go get` should install gort to $GOPATH/bin. 
 
-It may attempt to install to $GOBIN instead, however. If this happens, you can either build `professor` manually and copy the `professor` file to $GOPATH/bin, or call `sudo go get` to install to $GOBIN.
+It may attempt to install to $GOBIN instead, however. If this happens, you can either build `gort` manually and copy the `gort` file to $GOPATH/bin, or call `sudo go get` to install to $GOBIN.
 
-Complete! You are now ready to use Professor!
+Complete! You are now ready to use gort!
 
 
 Usage
 =====
 
-When using Professor, it is important that the code your are testing resides within a directory that is in your GOPATH.
+When using gort, it is important that the code your are testing resides within a directory that is in your GOPATH.
 
-Using Professor is easy. Just execute the command:
+Using gort is easy. Just execute the command:
 
-	professor test
+	gort test
 
-Professor will recurse the directory structure and run `go test -i` & `go test` for each directory that contains tests.
+gort will recurse the directory structure and run `go test -i` & `go test` for each directory that contains tests.
 
 If there is a directory that contains tests you don't wish to run, simply exclude it:
 
-	professor exclude testify
+	gort exclude testify
 	
 Now, when you run tests, the directory "testify" will not be recursed, and no tests inside it or its subdirectories will be run.
 
-Professor has some more commands that are not listed here. To see them all, simply run `professor` with no arguments
+gort has some more commands that are not listed here. To see them all, simply run `gort` with no arguments
 
 
 ------
