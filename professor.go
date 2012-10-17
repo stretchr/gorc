@@ -301,7 +301,7 @@ func RecurseDirectories(directory string, exclusions []string, commands ...strin
 				if output, error := shellCommand.CombinedOutput(); error != nil {
 
 					if len(arguments) == 1 {
-						testsFailed++
+					testsFailed++
 					}
 
 					succeeded = false
