@@ -30,6 +30,8 @@ Complete! You are now ready to use Professor!
 Usage
 =====
 
+When using Professor, it is important that the code your are testing resides within a directory that is in your GOPATH.
+
 Using Professor is easy. Just execute the command:
 
 	professor test
