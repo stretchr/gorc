@@ -1,7 +1,7 @@
 Professor - go test -r
 ===================================
 
-Professor is a go program that installs dependencies and/or runs tests, recursively, starting from the working directory.
+Professor is a go program that installs test dependencies and/or runs tests, recursively, starting from the working directory.
 
 Professor allows you to run all the tests in a multi-package directory structure with one command. As it works, it will display a '.' for each successful test and print out any failures. At the end of the run, professor will give you a summary of tests run, tests succeeded and tests failed.
 
@@ -42,9 +42,7 @@ If there is a directory that contains tests you don't wish to run, simply exclud
 	
 Now, when you run tests, the directory "testify" will not be recursed, and no tests inside it or its subdirectories will be run.
 
-Professor has some more commands that are not listed here. To see them all, simply run professor with no arguments:
-
-	professor	
+Professor has some more commands that are not listed here. To see them all, simply run `professor` with no arguments
 
 
 ------
