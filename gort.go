@@ -44,8 +44,11 @@ var (
 	// errorCurrentDirectory is printed when an error occurs attempting to get the current working directory.
 	errorCurrentDirectory = "There was an error attempting to get directory in which gort is being run: %s"
 
-	// commandRun is the string for the run command.
-	commandRun string = "test"
+	// commandTest is the string for the test command.
+	commandTest string = "test"
+
+	// commandHelp is the string for the help command.
+	commandHelp string = "help"
 
 	// commandInstall is the string for the install command.
 	commandInstall string = "install"
@@ -60,7 +63,7 @@ var (
 	commandExclusions string = "exclusions"
 
 	// validCommands contains the valid top level commands. Used to verify the top level command is sane.
-	validCommands = []string{commandRun, commandInstall, commandExclude, commandInclude, commandExclusions}
+	validCommands = []string{commandTest, commandHelp, commandInstall, commandExclude, commandInclude, commandExclusions}
 
 	// commandsRequiringSubcommands contains the top level commands that require a subcommand. Used to enforce subcommands when required.
 	commandsRequiringSubcommands = []string{commandExclude, commandInclude}
@@ -80,8 +83,8 @@ var (
 	// shellCommandInstallDependencies is the string for the shell command to run when installing dependencies
 	shellCommandInstallDependencies string = "go test -i"
 
-	// shellCommandRunTest is the string for the shell command to run when executing tests
-	shellCommandRunTest string = "go test"
+	// shellcommandTestTest is the string for the shell command to run when executing tests
+	shellcommandTestTest string = "go test"
 )
 
 // SliceContainsString determines if a slice of string contains the target string
@@ -224,11 +227,11 @@ func RunTests(subcommand string, exclusions []string) (int, int) {
 	if len(subcommand) != 0 {
 		if subcommand == subcommandAll {
 			// Pass nil as exclusions to run all tests
-			return RecurseDirectories(directory, nil, shellCommandInstallDependencies, shellCommandRunTest)
+			return RecurseDirectories(directory, nil, shellCommandInstallDependencies, shellcommandTestTest)
 		}
 	}
 
-	return RecurseDirectories(directory, exclusions, shellCommandInstallDependencies, shellCommandRunTest)
+	return RecurseDirectories(directory, exclusions, shellCommandInstallDependencies, shellcommandTestTest)
 }
 
 // InstallTestDependencies recurses all directories and installs test dependencies
@@ -323,12 +326,6 @@ func main() {
 
 	arguments := os.Args
 
-	// Verify the arguments
-	if success, details := VerifyArguments(arguments); !success {
-		fmt.Printf("\n%s\n\n", details)
-		os.Exit(1)
-	}
-
 	// Set up the basic configuration object in case we have no saved configuration file
 	var config = make(map[string]interface{})
 	config[configKeyExclusions] = make([]string, 0)
@@ -345,6 +342,20 @@ func main() {
 	}
 
 	exclusions := config[configKeyExclusions].([]string)
+
+	if len(arguments) == 1 {
+		fmt.Printf("\nRunning tests")
+		testsRun, testsFailed := RunTests("", exclusions)
+		fmt.Printf("\n\n%d run. %d succeeded. %d failed. [%.0f%% success]\n\n", testsRun, testsRun-testsFailed, testsFailed, (float32((testsRun-testsFailed))/float32(testsRun))*100)
+		os.Exit(0)
+	}
+
+	// Verify the arguments
+	if success, details := VerifyArguments(arguments); !success {
+		fmt.Printf("\n%s\n\n", details)
+		os.Exit(1)
+	}
+
 	command := arguments[1]
 	subcommand := ""
 	if len(arguments) == 3 {
@@ -352,10 +363,12 @@ func main() {
 	}
 
 	switch command {
-	case commandRun:
+	case commandTest:
 		fmt.Printf("\nRunning tests")
 		testsRun, testsFailed := RunTests(subcommand, exclusions)
 		fmt.Printf("\n\n%d run. %d succeeded. %d failed. [%.0f%% success]\n\n", testsRun, testsRun-testsFailed, testsFailed, (float32((testsRun-testsFailed))/float32(testsRun))*100)
+	case commandHelp:
+		fmt.Printf("\n%s\n\n", argumentErrorUsage)
 	case commandInstall:
 		fmt.Printf("\nInstalling test dependencies")
 		testsRun, testsFailed := InstallTestDependencies()
