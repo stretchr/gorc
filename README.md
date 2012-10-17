@@ -22,7 +22,7 @@ This will place Professor in $GOPATH/src/professor. Navigate to this directory, 
 
 	go install
 	
-`go install` should install Professor to $GOPATH/bin.
+`go install` should install Professor to $GOPATH/bin. It may attempt to install to $GOBIN instead, however. If this happens, you can manually copy the `professor` file to $GOPATH/bin.
 
 Complete! You are now ready to use Professor!
 
