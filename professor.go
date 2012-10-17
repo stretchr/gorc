@@ -10,7 +10,7 @@ import (
 )
 
 // argumentErrorUsage is printed when no arguments are passed to the program.
-var argumentErrorUsage string = `Professor runs or installs test dependencies, recursively, starting from the current working directory
+var argumentErrorUsage string = `Professor installs dependencies and/or runs tests, recursively, starting from the current working directory
 
 Usage: professor command [subcommand]
 
