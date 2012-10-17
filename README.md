@@ -24,8 +24,11 @@ To install gort, use `go get`:
 Usage
 =====
 
-Using gort is easy. Just execute the command:
+Using gort is easy. Just execute:
 
+	gort
+or
+	
 	gort test
 
 gort will recurse the directory structure and run `go test -i` & `go test` for each directory that contains tests.
