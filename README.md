@@ -1,4 +1,4 @@
-gort - go test -r
+gort - "go test ./...", and then some
 ===================================
 
 gort (**Go** **R**ecursive **T**esting) is a go program that installs test dependencies and/or runs tests, recursively, starting from the working directory.
