@@ -83,8 +83,8 @@ var (
 	// shellCommandInstallDependencies is the string for the shell command to run when installing dependencies
 	shellCommandInstallDependencies string = "go test -i"
 
-	// shellcommandTestTest is the string for the shell command to run when executing tests
-	shellcommandTestTest string = "go test"
+	// shellCommandTest is the string for the shell command to run when executing tests
+	shellCommandTest string = "go test"
 )
 
 // SliceContainsString determines if a slice of string contains the target string
@@ -227,26 +227,26 @@ func RunTests(subcommand string, exclusions []string) (int, int) {
 	if len(subcommand) != 0 {
 		if subcommand == subcommandAll {
 			// Pass nil as exclusions to run all tests
-			return RecurseDirectories(directory, nil, shellCommandInstallDependencies, shellcommandTestTest)
+			return RecurseDirectories(directory, nil, shellCommandTest)
 		}
 	}
 
-	return RecurseDirectories(directory, exclusions, shellCommandInstallDependencies, shellcommandTestTest)
+	return RecurseDirectories(directory, exclusions, shellCommandTest)
 }
 
 // InstallTestDependencies recurses all directories and installs test dependencies
-func InstallTestDependencies() (int, int) {
+func InstallTestDependencies(exclusions []string) (int, int) {
 	directory, error := os.Getwd()
 	if error != nil {
 		fmt.Printf(errorCurrentDirectory, error)
 	}
-	return RecurseDirectories(directory, nil, shellCommandInstallDependencies)
+	return RecurseDirectories(directory, exclusions, shellCommandInstallDependencies)
 }
 
 // RecurseDirectories recurses all directories and runs the given commands
 // exclusions contains directories to be skipped
 // Multiple commands may be passed and each will be run in sequence
-func RecurseDirectories(directory string, exclusions []string, commands ...string) (int, int) {
+func RecurseDirectories(directory string, exclusions []string, command string) (int, int) {
 
 	testsRun := 0
 	testsFailed := 0
@@ -272,7 +272,7 @@ func RecurseDirectories(directory string, exclusions []string, commands ...strin
 
 			// If this is a directory, recurse into it
 			if file.IsDir() {
-				tempTestsRun, tempTestsFailed := RecurseDirectories(fmt.Sprintf("%s/%s", directory, file.Name()), exclusions, commands...)
+				tempTestsRun, tempTestsFailed := RecurseDirectories(fmt.Sprintf("%s/%s", directory, file.Name()), exclusions, command)
 				testsRun += tempTestsRun
 				testsFailed += tempTestsFailed
 			} else {
@@ -290,35 +290,55 @@ func RecurseDirectories(directory string, exclusions []string, commands ...strin
 
 			succeeded := true
 
-			for i := 0; i < len(commands); i++ {
+			// Explode the test string and extract the command, arguments
+			splitCommand := strings.Split(command, " ")
 
-				// Explode the test string and extract the command, arguments
-				splitCommand := strings.Split(commands[i], " ")
+			command := splitCommand[0]
+			arguments := splitCommand[1:]
 
-				command := splitCommand[0]
-				arguments := splitCommand[1:]
+			shellCommand := exec.Command(command, arguments...)
+			shellCommand.Dir = directory
 
-				shellCommand := exec.Command(command, arguments...)
-				shellCommand.Dir = directory
+			if output, error := shellCommand.CombinedOutput(); error != nil {
 
-				if output, error := shellCommand.CombinedOutput(); error != nil {
+				testsFailed++
+				succeeded = false
 
-					if len(arguments) == 1 {
-						testsFailed++
-					}
-
-					succeeded = false
-					// Test failed, print the test output
-					fmt.Printf("\n\n%s", output)
-				}
+				// Test failed, print the test output
+				fmt.Printf("\n\n%s", output)
 			}
+
 			if succeeded {
 				// Print a . to indicate progress
 				fmt.Print(".")
 			}
 		}
 	}
+
 	return testsRun, testsFailed
+
+}
+
+func installAndExecuteTests(subcommand string, exclusions []string) {
+
+	fmt.Printf("\nInstalling test dependencies")
+	// We have a subcommand
+	var testsRun int
+	var testsFailed int
+	if len(subcommand) != 0 {
+		if subcommand == subcommandAll {
+			// Pass nil as exclusions to run all tests
+			testsRun, testsFailed = InstallTestDependencies(nil)
+		}
+	} else {
+		testsRun, testsFailed = InstallTestDependencies(exclusions)
+	}
+
+	fmt.Printf("\n%d installed. %d failed. [%.0f%% success]\n\n", testsRun-testsFailed, testsFailed, (float32((testsRun-testsFailed))/float32(testsRun))*100)
+
+	fmt.Printf("\nRunning tests")
+	testsRun, testsFailed = RunTests(subcommand, exclusions)
+	fmt.Printf("\n%d run. %d succeeded. %d failed. [%.0f%% success]\n\n", testsRun, testsRun-testsFailed, testsFailed, (float32((testsRun-testsFailed))/float32(testsRun))*100)
 
 }
 
@@ -344,9 +364,7 @@ func main() {
 	exclusions := config[configKeyExclusions].([]string)
 
 	if len(arguments) == 1 {
-		fmt.Printf("\nRunning tests")
-		testsRun, testsFailed := RunTests("", exclusions)
-		fmt.Printf("\n\n%d run. %d succeeded. %d failed. [%.0f%% success]\n\n", testsRun, testsRun-testsFailed, testsFailed, (float32((testsRun-testsFailed))/float32(testsRun))*100)
+		installAndExecuteTests("", exclusions)
 		os.Exit(0)
 	}
 
@@ -364,14 +382,12 @@ func main() {
 
 	switch command {
 	case commandTest:
-		fmt.Printf("\nRunning tests")
-		testsRun, testsFailed := RunTests(subcommand, exclusions)
-		fmt.Printf("\n\n%d run. %d succeeded. %d failed. [%.0f%% success]\n\n", testsRun, testsRun-testsFailed, testsFailed, (float32((testsRun-testsFailed))/float32(testsRun))*100)
+		installAndExecuteTests(subcommand, exclusions)
 	case commandHelp:
 		fmt.Printf("\n%s\n\n", argumentErrorUsage)
 	case commandInstall:
 		fmt.Printf("\nInstalling test dependencies")
-		testsRun, testsFailed := InstallTestDependencies()
+		testsRun, testsFailed := InstallTestDependencies(exclusions)
 		fmt.Printf("\n%d installed. %d failed. [%.0f%% success]\n\n", testsRun-testsFailed, testsFailed, (float32((testsRun-testsFailed))/float32(testsRun))*100)
 	case commandExclude:
 		Exclude(subcommand, config)
