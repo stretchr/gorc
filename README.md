@@ -33,6 +33,12 @@ or
 
 gort will recurse the directory structure and run `go test -i` & `go test` for each directory that contains tests.
 
+If you'd like gort to locate and run tests in a specific directory somewhere in the tree, do:
+
+	gort test testify
+	
+gort will recurse until it finds the "testify" directory, then run the tests in it.
+
 If there is a directory that contains tests you don't wish to run, simply exclude it:
 
 	gort exclude testify

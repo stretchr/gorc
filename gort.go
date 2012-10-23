@@ -17,6 +17,7 @@ Usage: gort command [subcommand]
 Valid commands are:
 
 	test - Runs tests
+	test <directory  name> - Runs tests in the named directory
 	test [all] - Runs tests, including excluded directories
 	install - Installs dependencies for tests
 	exclude <directory name> - Excludes a directory from recursion
@@ -130,6 +131,7 @@ func VerifyArguments(arguments []string) (bool, string) {
 		contains, _ := SliceContainsString(subcommand, validSubcommands)
 		if command != commandExclude &&
 			command != commandInclude &&
+			command != commandTest &&
 			!contains {
 			return false, fmt.Sprintf(argumentErrorUnknownSubcommand, subcommand)
 		}
@@ -216,6 +218,32 @@ func FormatExclusionsForPrint(exclusions []string) string {
 
 }
 
+func installAndExecuteTests(subcommand string, exclusions []string) {
+
+	fmt.Printf("\nInstalling test dependencies")
+	// We have a subcommand
+	var testsRun int
+	var testsFailed int
+	if len(subcommand) != 0 {
+		if subcommand == subcommandAll {
+			// Pass nil as exclusions to run all tests
+			testsRun, testsFailed = InstallTestDependencies(nil, "")
+		} else {
+			// Assume a single test directory to be run
+			testsRun, testsFailed = InstallTestDependencies(nil, subcommand)
+		}
+	} else {
+		testsRun, testsFailed = InstallTestDependencies(exclusions, "")
+	}
+
+	fmt.Printf("\n%d installed. %d succeeded. %d failed. [%.0f%% success]\n\n", testsRun, testsRun-testsFailed, testsFailed, (float32((testsRun-testsFailed))/float32(testsRun))*100)
+
+	fmt.Printf("\nRunning tests")
+	testsRun, testsFailed = RunTests(subcommand, exclusions)
+	fmt.Printf("\n%d run. %d succeeded. %d failed. [%.0f%% success]\n\n", testsRun, testsRun-testsFailed, testsFailed, (float32((testsRun-testsFailed))/float32(testsRun))*100)
+
+}
+
 // RunTests recurses all directories and installs tests dependencies, then runs tests
 func RunTests(subcommand string, exclusions []string) (int, int) {
 	directory, error := os.Getwd()
@@ -227,26 +255,29 @@ func RunTests(subcommand string, exclusions []string) (int, int) {
 	if len(subcommand) != 0 {
 		if subcommand == subcommandAll {
 			// Pass nil as exclusions to run all tests
-			return RecurseDirectories(directory, nil, shellCommandTest)
+			return RecurseDirectories(directory, nil, "", shellCommandTest)
+		} else {
+			// Assume the subcommand is a directory to be tested
+			return RecurseDirectories(directory, nil, subcommand, shellCommandTest)
 		}
 	}
 
-	return RecurseDirectories(directory, exclusions, shellCommandTest)
+	return RecurseDirectories(directory, exclusions, "", shellCommandTest)
 }
 
 // InstallTestDependencies recurses all directories and installs test dependencies
-func InstallTestDependencies(exclusions []string) (int, int) {
+func InstallTestDependencies(exclusions []string, targetDirectory string) (int, int) {
 	directory, error := os.Getwd()
 	if error != nil {
 		fmt.Printf(errorCurrentDirectory, error)
 	}
-	return RecurseDirectories(directory, exclusions, shellCommandInstallDependencies)
+	return RecurseDirectories(directory, exclusions, targetDirectory, shellCommandInstallDependencies)
 }
 
 // RecurseDirectories recurses all directories and runs the given commands
 // exclusions contains directories to be skipped
 // Multiple commands may be passed and each will be run in sequence
-func RecurseDirectories(directory string, exclusions []string, command string) (int, int) {
+func RecurseDirectories(directory string, exclusions []string, targetDirectory, command string) (int, int) {
 
 	testsRun := 0
 	testsFailed := 0
@@ -267,12 +298,14 @@ func RecurseDirectories(directory string, exclusions []string, command string) (
 			os.Exit(1)
 		}
 
+		directoryParts := strings.Split(directory, string(os.PathSeparator))
+		directoryName := directoryParts[len(directoryParts)-1]
 		testFileDetected := false
 		for _, file := range files {
 
-			// If this is a directory, recurse into it
-			if file.IsDir() {
-				tempTestsRun, tempTestsFailed := RecurseDirectories(fmt.Sprintf("%s/%s", directory, file.Name()), exclusions, command)
+			// If this is a directory, recurse into it, unless we are already in our targetDirectory			
+			if file.IsDir() && directoryName != targetDirectory {
+				tempTestsRun, tempTestsFailed := RecurseDirectories(fmt.Sprintf("%s/%s", directory, file.Name()), exclusions, targetDirectory, command)
 				testsRun += tempTestsRun
 				testsFailed += tempTestsFailed
 			} else {
@@ -284,8 +317,7 @@ func RecurseDirectories(directory string, exclusions []string, command string) (
 
 		}
 
-		if testFileDetected {
-
+		if (testFileDetected && len(targetDirectory) == 0) || (testFileDetected && directoryName == targetDirectory) {
 			testsRun++
 
 			succeeded := true
@@ -316,29 +348,6 @@ func RecurseDirectories(directory string, exclusions []string, command string) (
 	}
 
 	return testsRun, testsFailed
-
-}
-
-func installAndExecuteTests(subcommand string, exclusions []string) {
-
-	fmt.Printf("\nInstalling test dependencies")
-	// We have a subcommand
-	var testsRun int
-	var testsFailed int
-	if len(subcommand) != 0 {
-		if subcommand == subcommandAll {
-			// Pass nil as exclusions to run all tests
-			testsRun, testsFailed = InstallTestDependencies(nil)
-		}
-	} else {
-		testsRun, testsFailed = InstallTestDependencies(exclusions)
-	}
-
-	fmt.Printf("\n%d installed. %d failed. [%.0f%% success]\n\n", testsRun-testsFailed, testsFailed, (float32((testsRun-testsFailed))/float32(testsRun))*100)
-
-	fmt.Printf("\nRunning tests")
-	testsRun, testsFailed = RunTests(subcommand, exclusions)
-	fmt.Printf("\n%d run. %d succeeded. %d failed. [%.0f%% success]\n\n", testsRun, testsRun-testsFailed, testsFailed, (float32((testsRun-testsFailed))/float32(testsRun))*100)
 
 }
 
@@ -387,8 +396,8 @@ func main() {
 		fmt.Printf("\n%s\n\n", argumentErrorUsage)
 	case commandInstall:
 		fmt.Printf("\nInstalling test dependencies")
-		testsRun, testsFailed := InstallTestDependencies(exclusions)
-		fmt.Printf("\n%d installed. %d failed. [%.0f%% success]\n\n", testsRun-testsFailed, testsFailed, (float32((testsRun-testsFailed))/float32(testsRun))*100)
+		testsRun, testsFailed := InstallTestDependencies(exclusions, "")
+		fmt.Printf("\n%d installed. %d succeeded. %d failed. [%.0f%% success]\n\n", testsRun, testsRun-testsFailed, testsFailed, (float32((testsRun-testsFailed))/float32(testsRun))*100)
 	case commandExclude:
 		Exclude(subcommand, config)
 		fmt.Printf("\nExcluded: %s\n\n", subcommand)

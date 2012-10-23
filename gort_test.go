@@ -31,20 +31,6 @@ func TestVerifyArguments(t *testing.T) {
 		assert.Equal(t, details, fmt.Sprintf(argumentErrorUnknownCommand, arguments[1]))
 	}
 
-	arguments = []string{"gort", "test", "fromTheLaw"}
-	success, details = VerifyArguments(arguments)
-
-	if assert.False(t, success, details) {
-		assert.Equal(t, details, fmt.Sprintf(argumentErrorUnknownSubcommand, arguments[2]))
-	}
-
-	arguments = []string{"gort", "test", "fromTheLaw"}
-	success, details = VerifyArguments(arguments)
-
-	if assert.False(t, success, details) {
-		assert.Equal(t, details, fmt.Sprintf(argumentErrorUnknownSubcommand, arguments[2]))
-	}
-
 	arguments = []string{"gort", "exclude"}
 	success, details = VerifyArguments(arguments)
 
@@ -62,6 +48,10 @@ func TestVerifyArguments(t *testing.T) {
 	// Test good input
 
 	arguments = []string{"gort", "test"}
+	success, details = VerifyArguments(arguments)
+	assert.True(t, success, details)
+
+	arguments = []string{"gort", "test", "fromTheLaw"}
 	success, details = VerifyArguments(arguments)
 	assert.True(t, success, details)
 
