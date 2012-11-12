@@ -20,6 +20,7 @@ Valid commands are:
 	test <directory  name> - Runs tests in the named directory
 	test [all] - Runs tests, including excluded directories
 	install - Installs dependencies for tests
+	vet - Vets code
 	exclude <directory name> - Excludes a directory from recursion
 	include <directory name> - Includes a directory in recursion
 	exclusions - Prints a list of excluded directories
@@ -48,6 +49,9 @@ var (
 	// commandTest is the string for the test command.
 	commandTest string = "test"
 
+	// commandVey is the string for the vet command.
+	commandVet string = "vet"
+
 	// commandHelp is the string for the help command.
 	commandHelp string = "help"
 
@@ -64,7 +68,7 @@ var (
 	commandExclusions string = "exclusions"
 
 	// validCommands contains the valid top level commands. Used to verify the top level command is sane.
-	validCommands = []string{commandTest, commandHelp, commandInstall, commandExclude, commandInclude, commandExclusions}
+	validCommands = []string{commandTest, commandVet, commandHelp, commandInstall, commandExclude, commandInclude, commandExclusions}
 
 	// commandsRequiringSubcommands contains the top level commands that require a subcommand. Used to enforce subcommands when required.
 	commandsRequiringSubcommands = []string{commandExclude, commandInclude}
@@ -86,6 +90,15 @@ var (
 
 	// shellCommandTest is the string for the shell command to run when executing tests
 	shellCommandTest string = "go test"
+
+	// shellCommandVet is the string for the shell command to run when vetting code
+	shellCommandVet string = "go vet"
+
+	// fileTypeTest is the string contining the file type to look for when running/installing tests
+	fileTypeTest string = "_test.go"
+
+	// fileTypeGo is the string containing the file type to look for when vetting tests
+	fileTypeVet string = ".go"
 )
 
 // SliceContainsString determines if a slice of string contains the target string
@@ -132,6 +145,8 @@ func VerifyArguments(arguments []string) (bool, string) {
 		if command != commandExclude &&
 			command != commandInclude &&
 			command != commandTest &&
+			command != commandInstall &&
+			command != commandVet &&
 			!contains {
 			return false, fmt.Sprintf(argumentErrorUnknownSubcommand, subcommand)
 		}
@@ -255,14 +270,14 @@ func RunTests(subcommand string, exclusions []string) (int, int) {
 	if len(subcommand) != 0 {
 		if subcommand == subcommandAll {
 			// Pass nil as exclusions to run all tests
-			return RecurseDirectories(directory, nil, "", shellCommandTest)
+			return RecurseDirectories(directory, nil, "", shellCommandTest, fileTypeTest)
 		} else {
 			// Assume the subcommand is a directory to be tested
-			return RecurseDirectories(directory, nil, subcommand, shellCommandTest)
+			return RecurseDirectories(directory, nil, subcommand, shellCommandTest, fileTypeTest)
 		}
 	}
 
-	return RecurseDirectories(directory, exclusions, "", shellCommandTest)
+	return RecurseDirectories(directory, exclusions, "", shellCommandTest, fileTypeTest)
 }
 
 // InstallTestDependencies recurses all directories and installs test dependencies
@@ -271,13 +286,39 @@ func InstallTestDependencies(exclusions []string, targetDirectory string) (int, 
 	if error != nil {
 		fmt.Printf(errorCurrentDirectory, error)
 	}
-	return RecurseDirectories(directory, exclusions, targetDirectory, shellCommandInstallDependencies)
+	// We have a targetDirectory
+	if len(targetDirectory) != 0 {
+		if targetDirectory == subcommandAll {
+			return RecurseDirectories(directory, nil, "", shellCommandInstallDependencies, fileTypeTest)
+		} else {
+			return RecurseDirectories(directory, nil, targetDirectory, shellCommandInstallDependencies, fileTypeTest)
+		}
+	}
+	return RecurseDirectories(directory, exclusions, targetDirectory, shellCommandInstallDependencies, fileTypeTest)
+}
+
+// VetPackages recurses all directories and vets packages
+func VetPackages(exclusions []string, targetDirectory string) (int, int) {
+	directory, error := os.Getwd()
+	if error != nil {
+		fmt.Printf(errorCurrentDirectory, error)
+	}
+	// We have a targetDirectory
+	if len(targetDirectory) != 0 {
+		if targetDirectory == subcommandAll {
+			return RecurseDirectories(directory, nil, "", shellCommandVet, fileTypeVet)
+		} else {
+			return RecurseDirectories(directory, nil, targetDirectory, shellCommandVet, fileTypeVet)
+		}
+	}
+
+	return RecurseDirectories(directory, exclusions, targetDirectory, shellCommandVet, fileTypeVet)
 }
 
 // RecurseDirectories recurses all directories and runs the given commands
 // exclusions contains directories to be skipped
 // Multiple commands may be passed and each will be run in sequence
-func RecurseDirectories(directory string, exclusions []string, targetDirectory, command string) (int, int) {
+func RecurseDirectories(directory string, exclusions []string, targetDirectory, command string, fileType string) (int, int) {
 
 	testsRun := 0
 	testsFailed := 0
@@ -305,12 +346,12 @@ func RecurseDirectories(directory string, exclusions []string, targetDirectory, 
 
 			// If this is a directory, recurse into it, unless we are already in our targetDirectory			
 			if file.IsDir() && directoryName != targetDirectory {
-				tempTestsRun, tempTestsFailed := RecurseDirectories(fmt.Sprintf("%s/%s", directory, file.Name()), exclusions, targetDirectory, command)
+				tempTestsRun, tempTestsFailed := RecurseDirectories(fmt.Sprintf("%s/%s", directory, file.Name()), exclusions, targetDirectory, command, fileTypeTest)
 				testsRun += tempTestsRun
 				testsFailed += tempTestsFailed
 			} else {
 				// Determine if the filename contains "_test.go", indicating a testable directory
-				if testFileDetected == false && strings.Contains(file.Name(), "_test.go") {
+				if testFileDetected == false && strings.Contains(file.Name(), fileType) {
 					testFileDetected = true
 				}
 			}
@@ -392,11 +433,15 @@ func main() {
 	switch command {
 	case commandTest:
 		installAndExecuteTests(subcommand, exclusions)
+	case commandVet:
+		fmt.Printf("\nVetting packages")
+		vetsRun, vetsFailed := VetPackages(exclusions, subcommand)
+		fmt.Printf("\n%d vetted. %d passed. %d failed. [%.0f%% passed]\n\n", vetsRun, vetsRun-vetsFailed, vetsFailed, (float32((vetsRun-vetsFailed))/float32(vetsRun))*100)
 	case commandHelp:
 		fmt.Printf("\n%s\n\n", argumentErrorUsage)
 	case commandInstall:
 		fmt.Printf("\nInstalling test dependencies")
-		testsRun, testsFailed := InstallTestDependencies(exclusions, "")
+		testsRun, testsFailed := InstallTestDependencies(exclusions, subcommand)
 		fmt.Printf("\n%d installed. %d succeeded. %d failed. [%.0f%% success]\n\n", testsRun, testsRun-testsFailed, testsFailed, (float32((testsRun-testsFailed))/float32(testsRun))*100)
 	case commandExclude:
 		Exclude(subcommand, config)
