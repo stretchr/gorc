@@ -17,10 +17,14 @@ Usage: gort command [subcommand]
 Valid commands are:
 
 	test - Runs tests
-	test <directory  name> - Runs tests in the named directory
-	test [all] - Runs tests, including excluded directories
+	test <directory name> - Runs tests in the named directory
+	test all - Runs tests, including excluded directories
 	install - Installs dependencies for tests
+	install <directory name> - Installs dependencies for tests in the named directory
+	install all - Installs dependencies for tests, including excluded directories
 	vet - Vets code
+	vet <directory name> - Vets code in the named directory
+	vet all - Vets code, including excluded directories
 	exclude <directory name> - Excludes a directory from recursion
 	include <directory name> - Includes a directory in recursion
 	exclusions - Prints a list of excluded directories
