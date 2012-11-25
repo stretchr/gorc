@@ -1,9 +1,9 @@
-gorc - go test -r
+gorc - Let's get recursive in here!
 ===================================
 
-gorc (**Go** **R**ecursive **T**esting) is a go program that installs test dependencies and/or runs tests, recursively, starting from the working directory.
+gorc (**Go** **R**ecursive **C**ommands) is a go program that runs various go commands, recursively.
 
-gorc allows you to run all the tests in a multi-package directory structure with one command. As it works, it will display a '.' for each successful test and print out any failures. At the end of the run, gorc will give you a summary of tests run, tests succeeded and tests failed.
+gorc allows you to run a command against all the directories in a multi-package directory structure with one command. As it works, it will display its progress. At the end of the run, gorc will display any errors encountered, as well as give you a summary of tests run, tests succeeded and tests failed.
 
 gorc pairs wonderfully with our testing framework, [Testify](http://github.com/stretchrcom/testify).
 
