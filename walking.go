@@ -8,7 +8,7 @@ import (
 
 // Handler is the function signature of the function to be called when a match
 // is found during recursion
-type Handler func()
+type Handler func(currentDirectory string)
 
 func recurseDirectories(directory string, searchString string, handler Handler) {
 	directoryHandle, error := os.Open(directory)
@@ -38,6 +38,6 @@ func recurseDirectories(directory string, searchString string, handler Handler) 
 
 	if searchStringFound {
 		// We found our search string, call the handler
-		handler()
+		handler(directory)
 	}
 }

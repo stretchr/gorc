@@ -28,7 +28,7 @@ func getwd() (string, error) {
 func numCommandsToRun(searchString string) (int, error) {
 	numCommands := 0
 	if directory, error := getwd(); error == nil {
-		recurseDirectories(directory, searchString, func() {
+		recurseDirectories(directory, searchString, func(currentDirectory string) {
 			numCommands++
 		})
 	} else {
@@ -40,13 +40,13 @@ func numCommandsToRun(searchString string) (int, error) {
 func installTests() bool {
 	fmt.Print("Installing tests: ")
 	run, failed := runCommand(searchTest, "go", "test", "-i")
-	fmt.Printf("\n%d installed. %d failed. [%.0f%% success]\n\n", run-failed, failed, (float32((run-failed))/float32(run))*100)
+	fmt.Printf("\n\n%d installed. %d succeeded. %d failed. [%.0f%% success]\n\n", run, run-failed, failed, (float32((run-failed))/float32(run))*100)
 	return failed == 0
 }
 
 func runTests() {
 	fmt.Print("Runnings tests: ")
-	run, failed := runCommand(searchGo, "go", "test")
+	run, failed := runCommand(searchTest, "go", "test")
 	fmt.Printf("\n\n%d run. %d succeeded. %d failed. [%.0f%% success]\n\n", run, run-failed, failed, (float32((run-failed))/float32(run))*100)
 }
 
@@ -60,10 +60,10 @@ func runCommand(search, command string, args ...string) (int, int) {
 	var outputs []string
 	lastPrintLen := 0
 	currentJob := 1
-	if numCommands, error := numCommandsToRun(searchTest); error == nil {
+	if numCommands, error := numCommandsToRun(search); error == nil {
 		if directory, error := getwd(); error == nil {
-			recurseDirectories(directory, search, func() {
-				output := runShellCommand(directory, command, args...)
+			recurseDirectories(directory, search, func(currentDirectory string) {
+				output := runShellCommand(currentDirectory, command, args...)
 				if output != "" {
 					outputs = append(outputs, output)
 				}
@@ -73,7 +73,7 @@ func runCommand(search, command string, args ...string) (int, int) {
 					fmt.Print(printString)
 				} else {
 					printString := fmt.Sprintf("%s[%d of %d]", strings.Repeat("\b", lastPrintLen), currentJob, numCommands)
-					lastPrintLen = len(printString)
+					lastPrintLen = len(printString) - lastPrintLen
 					fmt.Print(printString)
 				}
 				currentJob++
@@ -82,7 +82,7 @@ func runCommand(search, command string, args ...string) (int, int) {
 	}
 
 	if len(outputs) != 0 {
-		for output := range outputs {
+		for _, output := range outputs {
 			fmt.Printf("\n\n%s", output)
 		}
 		return currentJob - 1, len(outputs)
@@ -131,6 +131,8 @@ func main() {
 		func(args map[string]interface{}) {
 			exclude(args["name"].(string), config)
 			fmt.Printf("\nExcluded \"%s\" from being examined during recursion.\n", args["name"].(string))
+			config = readConfig()
+			exclusions = config[configKeyExclusions].([]string)
 			fmt.Printf("\n%s\n\n", formatExclusionsForPrint(exclusions))
 		})
 
