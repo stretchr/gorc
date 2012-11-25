@@ -1,11 +1,11 @@
-gort - go test -r
+gorc - go test -r
 ===================================
 
-gort (**Go** **R**ecursive **T**esting) is a go program that installs test dependencies and/or runs tests, recursively, starting from the working directory.
+gorc (**Go** **R**ecursive **T**esting) is a go program that installs test dependencies and/or runs tests, recursively, starting from the working directory.
 
-gort allows you to run all the tests in a multi-package directory structure with one command. As it works, it will display a '.' for each successful test and print out any failures. At the end of the run, gort will give you a summary of tests run, tests succeeded and tests failed.
+gorc allows you to run all the tests in a multi-package directory structure with one command. As it works, it will display a '.' for each successful test and print out any failures. At the end of the run, gorc will give you a summary of tests run, tests succeeded and tests failed.
 
-gort pairs wonderfully with our testing framework, [Testify](http://github.com/stretchrcom/testify).
+gorc pairs wonderfully with our testing framework, [Testify](http://github.com/stretchrcom/testify).
 
 For an introduction to writing test code in Go, see the [Go Testing Documentation](http://golang.org/doc/code.html#Testing).
 
@@ -14,34 +14,34 @@ Installation
 
 Before installation, please ensure that your GOPATH is [set properly](http://golang.org/doc/code.html#tmp_2).
 
-To install gort, use `go get`:
+To install gorc, use `go get`:
 
-    go get github.com/stretchrcom/gort
+    go get github.com/stretchrcom/gorc
 	
-`go install` should install gort to $GOPATH/bin. In some cases, go will not use $GOPATH, and instead attempts to install to $GOBIN. If this happens, you can grant it permission to do so, or simply build and copy gort to $GOPATH/bin manually.
+`go install` should install gorc to $GOPATH/bin. In some cases, go will not use $GOPATH, and instead attempts to install to $GOBIN. If this happens, you can grant it permission to do so, or simply build and copy gorc to $GOPATH/bin manually.
 
 
 Usage
 =====
 
-Using gort is easy. Just execute:
+Using gorc is easy. Just execute:
 
-	gort
+	gorc
 or
 	
-	gort test
+	gorc test
 
-gort will recurse the directory structure and run `go test -i` & `go test` for each directory that contains tests.
+gorc will recurse the directory structure and run `go test -i` & `go test` for each directory that contains tests.
 
 If there is a directory that contains tests you don't wish to run, simply exclude it:
 
-	gort exclude testify
+	gorc exclude testify
 	
 Now, when you run tests, the directory "testify" will not be recursed, and no tests inside it or its subdirectories will be run.
 
-gort has some more commands that are not listed here. To see them all, run:
+gorc has some more commands that are not listed here. To see them all, run:
 
-	gort help
+	gorc help
 
 
 ------

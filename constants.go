@@ -4,8 +4,8 @@ const (
 	// configKeyExclusions is the string for the key in the configuration object at which the exclusions list is stored
 	configKeyExclusions = "exclusions"
 
-	// configFilename is the string for the name of the gort configuration file
-	configFilename = ".gort"
+	// configFilename is the string for the name of the gorc configuration file
+	configFilename = ".gorc"
 )
 
 const (
@@ -16,5 +16,5 @@ const (
 	errorRecursingDirectories = "There was an error when attempting to recurse directories: %s"
 
 	// errorCurrentDirectory is printed when an error occurs attempting to get the current working directory.
-	errorCurrentDirectory = "There was an error attempting to get directory in which gort is being run: %s"
+	errorCurrentDirectory = "There was an error attempting to get directory in which gorc is being run: %s"
 )
