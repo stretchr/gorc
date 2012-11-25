@@ -6,11 +6,14 @@ import (
 	"strings"
 )
 
-// Handler is the function signature of the function to be called when a match
+// callbackHandler is the function signature of the function to be called when a match
 // is found during recursion
-type Handler func(currentDirectory string)
+type callbackHandler func(currentDirectory string)
 
-func recurseDirectories(directory string, searchString string, handler Handler) {
+// skipHandler is the function signature of the function to be called to determine if a directory should be skipped
+type skipHandler func(currentDirectory string) bool
+
+func recurseDirectories(directory, targetDirectory string, searchString string, skip skipHandler, callback callbackHandler) {
 	directoryHandle, error := os.Open(directory)
 	if error != nil {
 		fmt.Printf(errorRecursingDirectories, error)
@@ -23,21 +26,24 @@ func recurseDirectories(directory string, searchString string, handler Handler) 
 	}
 
 	searchStringFound := false
-	for _, file := range files {
+	directoryParts := strings.Split(directory, string(os.PathSeparator))
+	directoryName := directoryParts[len(directoryParts)-1]
 
-		if file.IsDir() {
-			// If this is a directory, recurse into it
-			recurseDirectories(fmt.Sprintf("%s/%s", directory, file.Name()), searchString, handler)
+	for _, file := range files {
+		if file.IsDir() && directoryName != targetDirectory {
+			if skip(file.Name()) {
+				continue
+			}
+			recurseDirectories(fmt.Sprintf("%s/%s", directory, file.Name()), targetDirectory, searchString, skip, callback)
 		} else {
-			// Check each file name to see if we should call the handler
 			if searchStringFound == false && strings.Contains(file.Name(), searchString) {
 				searchStringFound = true
 			}
 		}
 	}
 
-	if searchStringFound {
+	if (searchStringFound && targetDirectory == "") || (searchStringFound && directoryName == targetDirectory) {
 		// We found our search string, call the handler
-		handler(directory)
+		callback(directory)
 	}
 }

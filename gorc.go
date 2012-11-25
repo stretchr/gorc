@@ -7,8 +7,6 @@ import (
 	"strings"
 )
 
-//dont forget: capture all input and print everything at the END so we can have cleaner output
-
 const (
 	// searchTest is the string for searching for test files
 	searchTest = "_test.go"
@@ -25,59 +23,74 @@ func getwd() (string, error) {
 	return directory, error
 }
 
-func numCommandsToRun(searchString string) (int, error) {
+func numCommandsToRun(target, searchString string) (int, error) {
 	numCommands := 0
 	if directory, error := getwd(); error == nil {
-		recurseDirectories(directory, searchString, func(currentDirectory string) {
-			numCommands++
-		})
+		recurseDirectories(directory, target, searchString,
+			func(currentDirectory string) bool {
+				if contains, _ := sliceContainsString(currentDirectory, exclusions); target == "" && contains {
+					return true
+				}
+				return false
+			},
+			func(currentDirectory string) {
+				numCommands++
+			})
 	} else {
 		return 0, error
 	}
 	return numCommands, nil
 }
 
-func installTests() bool {
-	fmt.Print("Installing tests: ")
-	run, failed := runCommand(searchTest, "go", "test", "-i")
-	fmt.Printf("\n\n%d installed. %d succeeded. %d failed. [%.0f%% success]\n\n", run, run-failed, failed, (float32((run-failed))/float32(run))*100)
+func installTests(name string) bool {
+	fmt.Print("\nInstalling tests: ")
+	run, failed := runCommand(name, searchTest, "go", "test", "-i")
+	fmt.Printf("\n\n%d installed. %d failed. [%.0f%% success]\n\n", run-failed, failed, (float32((run-failed))/float32(run))*100)
 	return failed == 0
 }
 
-func runTests() {
-	fmt.Print("Runnings tests: ")
-	run, failed := runCommand(searchTest, "go", "test")
+func runTests(name string) {
+	fmt.Print("Running tests: ")
+	run, failed := runCommand(name, searchTest, "go", "test")
 	fmt.Printf("\n\n%d run. %d succeeded. %d failed. [%.0f%% success]\n\n", run, run-failed, failed, (float32((run-failed))/float32(run))*100)
 }
 
-func vetPackages() {
+func vetPackages(name string) {
 	fmt.Print("Vetting packages: ")
-	run, failed := runCommand(searchGo, "go", "test")
+	run, failed := runCommand(name, searchGo, "go", "vet")
 	fmt.Printf("\n\n%d vetted. %d succeeded. %d failed. [%.0f%% success]\n\n", run, run-failed, failed, (float32((run-failed))/float32(run))*100)
 }
 
-func runCommand(search, command string, args ...string) (int, int) {
+func runCommand(target, search, command string, args ...string) (int, int) {
 	var outputs []string
 	lastPrintLen := 0
 	currentJob := 1
-	if numCommands, error := numCommandsToRun(search); error == nil {
+	if numCommands, error := numCommandsToRun(target, search); error == nil {
 		if directory, error := getwd(); error == nil {
-			recurseDirectories(directory, search, func(currentDirectory string) {
-				output := runShellCommand(currentDirectory, command, args...)
-				if output != "" {
-					outputs = append(outputs, output)
-				}
-				if lastPrintLen == 0 {
-					printString := fmt.Sprintf("[%d of %d]", currentJob, numCommands)
-					lastPrintLen = len(printString)
-					fmt.Print(printString)
-				} else {
-					printString := fmt.Sprintf("%s[%d of %d]", strings.Repeat("\b", lastPrintLen), currentJob, numCommands)
-					lastPrintLen = len(printString) - lastPrintLen
-					fmt.Print(printString)
-				}
-				currentJob++
-			})
+			recurseDirectories(directory, target, search,
+				func(currentDirectory string) bool {
+					if contains, _ := sliceContainsString(currentDirectory, exclusions); target == "" && contains {
+						return true
+					}
+					return false
+				},
+				func(currentDirectory string) {
+					output := runShellCommand(currentDirectory, command, args...)
+					if output != "" {
+						outputs = append(outputs, output)
+					}
+					if lastPrintLen == 0 {
+						printString := fmt.Sprintf("[%d of %d]", currentJob, numCommands)
+						lastPrintLen = len(printString)
+						fmt.Print(printString)
+					} else {
+						printString := fmt.Sprintf("%s[%d of %d]", strings.Repeat("\b", lastPrintLen), currentJob, numCommands)
+						lastPrintLen = len(printString) - lastPrintLen
+						fmt.Print(printString)
+					}
+					currentJob++
+
+				})
 		}
 	}
 
@@ -91,39 +104,62 @@ func runCommand(search, command string, args ...string) (int, int) {
 	return currentJob - 1, 0
 }
 
+var exclusions []string
+
 func main() {
 
 	var config = readConfig()
-	exclusions := config[configKeyExclusions].([]string)
+	exclusions = config[configKeyExclusions].([]string)
 
 	commander.Initialize()
 
-	commander.Map(commander.DefaultCommand, "", "", func(args map[string]interface{}) {
-		if installTests() {
-			runTests()
-		}
-	})
+	commander.Map(commander.DefaultCommand, "", "",
+		func(args map[string]interface{}) {
+			name := ""
+			if _, ok := args["name"]; ok {
+				name = args["name"].(string)
+			}
+
+			if installTests(name) {
+				runTests(name)
+			} else {
+				fmt.Println("Test dependency installation failed. Aborting test run.")
+			}
+		})
 
 	commander.Map("test [name=(string)]", "Runs tests, or named test",
 		"If no name argument is specified, runs all tests recursively. If a name argument is specified, runs just that test, unless the argument is \"all\", in which case it runs all tests, including those in the exclusion list.",
 		func(args map[string]interface{}) {
-			if installTests() {
-				runTests()
+			name := ""
+			if _, ok := args["name"]; ok {
+				name = args["name"].(string)
+			}
+
+			if installTests(name) {
+				runTests(name)
+			} else {
+				fmt.Println("Test dependency installation failed. Aborting test run.")
 			}
 		})
 
 	commander.Map("install [name=(string)]", "Installs tests, or named test",
 		"If no name argument is specified, installs all tests recursively. If a name argument is specified, installs just that test, unless the argument is \"all\", in which case it installs all tests, including those in the exclusion list.",
 		func(args map[string]interface{}) {
-			installTests()
+			name := ""
+			if _, ok := args["name"]; ok {
+				name = args["name"].(string)
+			}
+			installTests(name)
 		})
 
 	commander.Map("vet [name=(string)]", "Vets packages, or named package",
 		"If no name argument is specified, vets all tests recursively. If a name argument is specified, vets just that test, unless the argument is \"all\", in which case it vets all tests, including those in the exclusion list.",
 		func(args map[string]interface{}) {
-			if installTests() {
-				vetPackages()
+			name := ""
+			if _, ok := args["name"]; ok {
+				name = args["name"].(string)
 			}
+			vetPackages(name)
 		})
 
 	commander.Map("exclude name=(string)", "Excludes the named directory from recursion",
