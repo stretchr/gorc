@@ -111,79 +111,77 @@ func main() {
 	var config = readConfig()
 	exclusions = config[configKeyExclusions].([]string)
 
-	commander.Initialize()
+	commander.Go(func() {
+		commander.Map(commander.DefaultCommand, "", "",
+			func(args map[string]interface{}) {
+				name := ""
+				if _, ok := args["name"]; ok {
+					name = args["name"].(string)
+				}
 
-	commander.Map(commander.DefaultCommand, "", "",
-		func(args map[string]interface{}) {
-			name := ""
-			if _, ok := args["name"]; ok {
-				name = args["name"].(string)
-			}
+				if installTests(name) {
+					runTests(name)
+				} else {
+					fmt.Println("Test dependency installation failed. Aborting test run.")
+				}
+			})
 
-			if installTests(name) {
-				runTests(name)
-			} else {
-				fmt.Println("Test dependency installation failed. Aborting test run.")
-			}
-		})
+		commander.Map("test [name=(string)]", "Runs tests, or named test",
+			"If no name argument is specified, runs all tests recursively. If a name argument is specified, runs just that test, unless the argument is \"all\", in which case it runs all tests, including those in the exclusion list.",
+			func(args map[string]interface{}) {
+				name := ""
+				if _, ok := args["name"]; ok {
+					name = args["name"].(string)
+				}
 
-	commander.Map("test [name=(string)]", "Runs tests, or named test",
-		"If no name argument is specified, runs all tests recursively. If a name argument is specified, runs just that test, unless the argument is \"all\", in which case it runs all tests, including those in the exclusion list.",
-		func(args map[string]interface{}) {
-			name := ""
-			if _, ok := args["name"]; ok {
-				name = args["name"].(string)
-			}
+				if installTests(name) {
+					runTests(name)
+				} else {
+					fmt.Println("Test dependency installation failed. Aborting test run.")
+				}
+			})
 
-			if installTests(name) {
-				runTests(name)
-			} else {
-				fmt.Println("Test dependency installation failed. Aborting test run.")
-			}
-		})
+		commander.Map("install [name=(string)]", "Installs tests, or named test",
+			"If no name argument is specified, installs all tests recursively. If a name argument is specified, installs just that test, unless the argument is \"all\", in which case it installs all tests, including those in the exclusion list.",
+			func(args map[string]interface{}) {
+				name := ""
+				if _, ok := args["name"]; ok {
+					name = args["name"].(string)
+				}
+				installTests(name)
+			})
 
-	commander.Map("install [name=(string)]", "Installs tests, or named test",
-		"If no name argument is specified, installs all tests recursively. If a name argument is specified, installs just that test, unless the argument is \"all\", in which case it installs all tests, including those in the exclusion list.",
-		func(args map[string]interface{}) {
-			name := ""
-			if _, ok := args["name"]; ok {
-				name = args["name"].(string)
-			}
-			installTests(name)
-		})
+		commander.Map("vet [name=(string)]", "Vets packages, or named package",
+			"If no name argument is specified, vets all tests recursively. If a name argument is specified, vets just that test, unless the argument is \"all\", in which case it vets all tests, including those in the exclusion list.",
+			func(args map[string]interface{}) {
+				name := ""
+				if _, ok := args["name"]; ok {
+					name = args["name"].(string)
+				}
+				vetPackages(name)
+			})
 
-	commander.Map("vet [name=(string)]", "Vets packages, or named package",
-		"If no name argument is specified, vets all tests recursively. If a name argument is specified, vets just that test, unless the argument is \"all\", in which case it vets all tests, including those in the exclusion list.",
-		func(args map[string]interface{}) {
-			name := ""
-			if _, ok := args["name"]; ok {
-				name = args["name"].(string)
-			}
-			vetPackages(name)
-		})
+		commander.Map("exclude name=(string)", "Excludes the named directory from recursion",
+			"An excluded directory will be skipped when walking the directory tree. Any subdirectories of the excluded directory will also be skipped.",
+			func(args map[string]interface{}) {
+				exclude(args["name"].(string), config)
+				fmt.Printf("\nExcluded \"%s\" from being examined during recursion.\n", args["name"].(string))
+				config = readConfig()
+				exclusions = config[configKeyExclusions].([]string)
+				fmt.Printf("\n%s\n\n", formatExclusionsForPrint(exclusions))
+			})
 
-	commander.Map("exclude name=(string)", "Excludes the named directory from recursion",
-		"An excluded directory will be skipped when walking the directory tree. Any subdirectories of the excluded directory will also be skipped.",
-		func(args map[string]interface{}) {
-			exclude(args["name"].(string), config)
-			fmt.Printf("\nExcluded \"%s\" from being examined during recursion.\n", args["name"].(string))
-			config = readConfig()
-			exclusions = config[configKeyExclusions].([]string)
-			fmt.Printf("\n%s\n\n", formatExclusionsForPrint(exclusions))
-		})
+		commander.Map("include name=(string)", "Removes the named directory from the exclusion list", "",
+			func(args map[string]interface{}) {
+				include(args["name"].(string), config)
+				fmt.Printf("\nRemoved \"%s\" from the exclusion list.\n", args["name"].(string))
+				fmt.Printf("\n%s\n\n", formatExclusionsForPrint(exclusions))
+			})
 
-	commander.Map("include name=(string)", "Removes the named directory from the exclusion list", "",
-		func(args map[string]interface{}) {
-			include(args["name"].(string), config)
-			fmt.Printf("\nRemoved \"%s\" from the exclusion list.\n", args["name"].(string))
-			fmt.Printf("\n%s\n\n", formatExclusionsForPrint(exclusions))
-		})
-
-	commander.Map("exclusions", "Prints the exclusion list", "",
-		func(args map[string]interface{}) {
-			fmt.Printf("\n%s\n\n", formatExclusionsForPrint(exclusions))
-		})
-
-	commander.Execute()
+		commander.Map("exclusions", "Prints the exclusion list", "",
+			func(args map[string]interface{}) {
+				fmt.Printf("\n%s\n\n", formatExclusionsForPrint(exclusions))
+			})
+	})
 
 }
