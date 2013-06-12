@@ -65,7 +65,7 @@ func runTests(name string) {
 }
 
 func vetPackages(name string) {
-	fmt.Print("Vetting packages: ")
+	fmt.Printf("\nVetting packages: ")
 	run, failed := runCommand(name, searchGo, "go", "vet")
 	if run == 0 && failed == 0 {
 		fmt.Println("No packages were found in or below the current working directory.")
@@ -73,6 +73,15 @@ func vetPackages(name string) {
 		fmt.Printf("\n\n%d vetted. %d succeeded. %d failed. [%.0f%% success]\n\n", run, run-failed, failed, (float32((run-failed))/float32(run))*100)
 	}
 }
+
+func raceTests(name string) {
+	fmt.Printf("\nRunning race tests: ")
+	run, failed := runCommand(name, searchTest, "go", "test", "-race")
+	if run == 0 && failed == 0 {
+		fmt.Println("No tests were found in or below the current working directory.")
+	} else {
+		fmt.Printf("\n\n%d run. %d succeeded. %d failed. [%.0f%% success]\n\n", run, run-failed, failed, (float32((run-failed))/float32(run))*100)
+	}
 }
 
 func runCommand(target, search, command string, args ...string) (int, int) {
@@ -92,10 +101,6 @@ func runCommand(target, search, command string, args ...string) (int, int) {
 					return false
 				},
 				func(currentDirectory string) {
-					output := runShellCommand(currentDirectory, command, args...)
-					if output != "" {
-						outputs = append(outputs, output)
-					}
 					if lastPrintLen == 0 {
 						printString := fmt.Sprintf("[%d of %d]", currentJob, numCommands)
 						lastPrintLen = len(printString)
@@ -107,6 +112,10 @@ func runCommand(target, search, command string, args ...string) (int, int) {
 					}
 					currentJob++
 
+					output := runShellCommand(currentDirectory, command, args...)
+					if output != "" {
+						outputs = append(outputs, output)
+					}
 				})
 		}
 	}
@@ -139,7 +148,7 @@ func main() {
 				if installTests(name) {
 					runTests(name)
 				} else {
-					fmt.Println("Test dependency installation failed. Aborting test run.")
+					fmt.Printf("Test dependency installation failed. Aborting test run.\n\n")
 				}
 			})
 
@@ -169,13 +178,23 @@ func main() {
 			})
 
 		commander.Map("vet [name=(string)]", "Vets packages, or named package",
-			"If no name argument is specified, vets all tests recursively. If a name argument is specified, vets just that test, unless the argument is \"all\", in which case it vets all tests, including those in the exclusion list.",
+			"If no name argument is specified, vets all packages recursively. If a name argument is specified, vets just that package, unless the argument is \"all\", in which case it vets all packages, including those in the exclusion list.",
 			func(args map[string]interface{}) {
 				name := ""
 				if _, ok := args["name"]; ok {
 					name = args["name"].(string)
 				}
 				vetPackages(name)
+			})
+
+		commander.Map("race [name=(string)]", "Runs race detector on tests, or named test",
+			"If no name argument is specified, race tests all tests recursively. If a name argument is specified, vets just that test, unless the argument is \"all\", in which case it vets all tests, including those in the exclusion list.",
+			func(args map[string]interface{}) {
+				name := ""
+				if _, ok := args["name"]; ok {
+					name = args["name"].(string)
+				}
+				raceTests(name)
 			})
 
 		commander.Map("exclude name=(string)", "Excludes the named directory from recursion",
