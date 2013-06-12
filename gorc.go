@@ -45,20 +45,34 @@ func numCommandsToRun(target, searchString string) (int, error) {
 func installTests(name string) bool {
 	fmt.Print("\nInstalling tests: ")
 	run, failed := runCommand(name, searchTest, "go", "test", "-i")
-	fmt.Printf("\n\n%d installed. %d failed. [%.0f%% success]\n\n", run-failed, failed, (float32((run-failed))/float32(run))*100)
+	if run == 0 && failed == 0 {
+		fmt.Println("No tests were found in or below the current working directory.")
+		return false
+	} else {
+		fmt.Printf("\n\n%d installed. %d failed. [%.0f%% success]\n\n", run-failed, failed, (float32((run-failed))/float32(run))*100)
+	}
 	return failed == 0
 }
 
 func runTests(name string) {
 	fmt.Print("Running tests: ")
 	run, failed := runCommand(name, searchTest, "go", "test")
-	fmt.Printf("\n\n%d run. %d succeeded. %d failed. [%.0f%% success]\n\n", run, run-failed, failed, (float32((run-failed))/float32(run))*100)
+	if run == 0 && failed == 0 {
+		fmt.Println("No tests were found in or below the current working directory.")
+	} else {
+		fmt.Printf("\n\n%d run. %d succeeded. %d failed. [%.0f%% success]\n\n", run, run-failed, failed, (float32((run-failed))/float32(run))*100)
+	}
 }
 
 func vetPackages(name string) {
 	fmt.Print("Vetting packages: ")
 	run, failed := runCommand(name, searchGo, "go", "vet")
-	fmt.Printf("\n\n%d vetted. %d succeeded. %d failed. [%.0f%% success]\n\n", run, run-failed, failed, (float32((run-failed))/float32(run))*100)
+	if run == 0 && failed == 0 {
+		fmt.Println("No packages were found in or below the current working directory.")
+	} else {
+		fmt.Printf("\n\n%d vetted. %d succeeded. %d failed. [%.0f%% success]\n\n", run, run-failed, failed, (float32((run-failed))/float32(run))*100)
+	}
+}
 }
 
 func runCommand(target, search, command string, args ...string) (int, int) {
