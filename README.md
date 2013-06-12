@@ -5,7 +5,7 @@ gort ( **Go** **R**ecursive **T**esting ) is a go program that installs test dep
 
 gort allows you to run all the tests in a multi-package directory structure with one command. As it works, it will display a '.' for each successful test and print out any failures. At the end of the run, gort will give you a summary of tests run, tests succeeded and tests failed.
 
-gort pairs wonderfully with our testing framework, [Testify](http://github.com/stretchrcom/testify).
+gort pairs wonderfully with our testing framework, [Testify](http://github.com/stretchr/testify).
 
 For an introduction to writing test code in Go, see the [Go Testing Documentation](http://golang.org/doc/code.html#Testing).
 
@@ -16,7 +16,7 @@ Before installation, please ensure that your GOPATH is [set properly](http://gol
 
 To install gort, use `go get`:
 
-    go get github.com/stretchrcom/gort
+    go get github.com/stretchr/gort
 	
 `go get` should install gort to $GOPATH/bin. In some cases, go will not use $GOPATH, and instead attempts to install to $GOBIN. If this happens, you can grant it permission to do so, or simply build and copy gort to $GOPATH/bin manually.
 
