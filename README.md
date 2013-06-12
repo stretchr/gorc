@@ -5,7 +5,7 @@ gorc (**Go** **R**ecursive **C**ommands) is a go program that runs various go co
 
 gorc allows you to run a command against all the directories in a multi-package directory structure with one command. As it works, it will display its progress. At the end of the run, gorc will display any errors encountered, as well as give you a summary of tests run, tests succeeded and tests failed.
 
-gorc pairs wonderfully with our testing framework, [Testify](http://github.com/stretchrcom/testify).
+gorc pairs wonderfully with our testing framework, [Testify](http://github.com/stretchr/testify).
 
 For an introduction to writing test code in Go, see the [Go Testing Documentation](http://golang.org/doc/code.html#Testing).
 
@@ -16,8 +16,8 @@ Before installation, please ensure that your GOPATH is [set properly](http://gol
 
 To install gorc, use `go get`:
 
-    go get github.com/stretchrcom/gorc
-	
+    go get github.com/stretchr/gorc
+
 `go install` should install gorc to $GOPATH/bin. In some cases, go will not use $GOPATH, and instead attempts to install to $GOBIN. If this happens, you can grant it permission to do so, or simply build and copy gorc to $GOPATH/bin manually.
 
 
@@ -28,7 +28,7 @@ Using gorc is easy. Just execute:
 
 	gorc
 or
-	
+
 	gorc test
 
 gorc will recurse the directory structure and run `go test -i` & `go test` for each directory that contains tests.
@@ -36,7 +36,7 @@ gorc will recurse the directory structure and run `go test -i` & `go test` for e
 If there is a directory that contains tests you don't wish to run, simply exclude it:
 
 	gorc exclude testify
-	
+
 Now, when you run tests, the directory "testify" will not be recursed, and no tests inside it or its subdirectories will be run.
 
 gorc has some more commands that are not listed here. To see them all, run:

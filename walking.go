@@ -42,7 +42,7 @@ func recurseDirectories(directory, targetDirectory string, searchString string, 
 		}
 	}
 
-	if (searchStringFound && targetDirectory == "") || (searchStringFound && directoryName == targetDirectory) {
+	if (searchStringFound && (targetDirectory == "" || targetDirectory == "all")) || (searchStringFound && directoryName == targetDirectory) {
 		// We found our search string, call the handler
 		callback(directory)
 	}

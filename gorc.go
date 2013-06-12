@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"github.com/stretchrcom/commander"
+	"github.com/stretchr/commander"
 	"os"
 	"strings"
 )
@@ -69,6 +69,9 @@ func runCommand(target, search, command string, args ...string) (int, int) {
 		if directory, error := getwd(); error == nil {
 			recurseDirectories(directory, target, search,
 				func(currentDirectory string) bool {
+					if target == "all" {
+						return false
+					}
 					if contains, _ := sliceContainsString(currentDirectory, exclusions); target == "" && contains {
 						return true
 					}
