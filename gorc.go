@@ -99,6 +99,16 @@ func runCommand(target, search, command string, args ...string) (int, int) {
 		}(directory)
 	}
 
+	if lastPrintLen == 0 {
+		printString := fmt.Sprintf("[%d of %d]", currentJob, numCommands)
+		lastPrintLen = len(printString)
+		fmt.Print(printString)
+	} else {
+		printString := fmt.Sprintf("%s[%d of %d]", strings.Repeat("\b", lastPrintLen), currentJob, numCommands)
+		lastPrintLen = len(printString) - lastPrintLen
+		fmt.Print(printString)
+	}
+
 	go func() {
 		for output := range outputChan {
 
