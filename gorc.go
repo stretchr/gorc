@@ -5,6 +5,7 @@ import (
 	"github.com/stretchr/commander"
 	"os"
 	"strings"
+	"sync"
 )
 
 const (
@@ -21,25 +22,6 @@ func getwd() (string, error) {
 		fmt.Printf(errorCurrentDirectory, error)
 	}
 	return directory, error
-}
-
-func numCommandsToRun(target, searchString string) (int, error) {
-	numCommands := 0
-	if directory, error := getwd(); error == nil {
-		recurseDirectories(directory, target, searchString,
-			func(currentDirectory string) bool {
-				if contains, _ := sliceContainsString(currentDirectory, exclusions); target == "" && contains {
-					return true
-				}
-				return false
-			},
-			func(currentDirectory string) {
-				numCommands++
-			})
-	} else {
-		return 0, error
-	}
-	return numCommands, nil
 }
 
 func installTests(name string) bool {
@@ -88,37 +70,58 @@ func runCommand(target, search, command string, args ...string) (int, int) {
 	var outputs []string
 	lastPrintLen := 0
 	currentJob := 1
-	if numCommands, error := numCommandsToRun(target, search); error == nil {
-		if directory, error := getwd(); error == nil {
-			recurseDirectories(directory, target, search,
-				func(currentDirectory string) bool {
-					if target == "all" {
-						return false
-					}
-					if contains, _ := sliceContainsString(currentDirectory, exclusions); target == "" && contains {
-						return true
-					}
-					return false
-				},
-				func(currentDirectory string) {
-					if lastPrintLen == 0 {
-						printString := fmt.Sprintf("[%d of %d]", currentJob, numCommands)
-						lastPrintLen = len(printString)
-						fmt.Print(printString)
-					} else {
-						printString := fmt.Sprintf("%s[%d of %d]", strings.Repeat("\b", lastPrintLen), currentJob, numCommands)
-						lastPrintLen = len(printString) - lastPrintLen
-						fmt.Print(printString)
-					}
-					currentJob++
+	directories := []string{}
 
-					output := runShellCommand(currentDirectory, command, args...)
-					if output != "" {
-						outputs = append(outputs, output)
-					}
-				})
-		}
+	if directory, error := getwd(); error == nil {
+		recurseDirectories(directory, target, search,
+			func(currentDirectory string) bool {
+				if target == "all" {
+					return false
+				}
+				if contains, _ := sliceContainsString(currentDirectory, exclusions); target == "" && contains {
+					return true
+				}
+				return false
+			},
+			func(currentDirectory string) {
+				directories = append(directories, currentDirectory)
+			})
 	}
+
+	numCommands := len(directories)
+	outputChan := make(chan string, 10)
+	var wg sync.WaitGroup
+	wg.Add(numCommands)
+
+	for _, directory := range directories {
+		go func(dir string) {
+			outputChan <- runShellCommand(dir, command, args...)
+		}(directory)
+	}
+
+	go func() {
+		for output := range outputChan {
+
+			if lastPrintLen == 0 {
+				printString := fmt.Sprintf("[%d of %d]", currentJob, numCommands)
+				lastPrintLen = len(printString)
+				fmt.Print(printString)
+			} else {
+				printString := fmt.Sprintf("%s[%d of %d]", strings.Repeat("\b", lastPrintLen), currentJob, numCommands)
+				lastPrintLen = len(printString) - lastPrintLen
+				fmt.Print(printString)
+			}
+			currentJob++
+
+			if output != "" {
+				outputs = append(outputs, output)
+			}
+
+			wg.Done()
+		}
+	}()
+
+	wg.Wait()
 
 	if len(outputs) != 0 {
 		for _, output := range outputs {
