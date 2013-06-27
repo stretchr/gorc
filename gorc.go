@@ -38,7 +38,7 @@ func installTests(name string) bool {
 
 func runTests(name string) {
 	fmt.Print("Running tests: ")
-	run, failed := runCommand(name, searchTest, "go", "test")
+	run, failed := runCommandParallel(name, searchTest, "go", "test")
 	if run == 0 && failed == 0 {
 		fmt.Println("No tests were found in or below the current working directory.")
 	} else {
@@ -48,7 +48,7 @@ func runTests(name string) {
 
 func vetPackages(name string) {
 	fmt.Printf("\nVetting packages: ")
-	run, failed := runCommand(name, searchGo, "go", "vet")
+	run, failed := runCommandParallel(name, searchGo, "go", "vet")
 	if run == 0 && failed == 0 {
 		fmt.Println("No packages were found in or below the current working directory.")
 	} else {
@@ -58,7 +58,7 @@ func vetPackages(name string) {
 
 func raceTests(name string) {
 	fmt.Printf("\nRunning race tests: ")
-	run, failed := runCommand(name, searchTest, "go", "test", "-race")
+	run, failed := runCommandParallel(name, searchTest, "go", "test", "-race")
 	if run == 0 && failed == 0 {
 		fmt.Println("No tests were found in or below the current working directory.")
 	} else {
@@ -67,6 +67,59 @@ func raceTests(name string) {
 }
 
 func runCommand(target, search, command string, args ...string) (int, int) {
+	var outputs []string
+	lastPrintLen := 0
+	currentJob := 1
+	directories := []string{}
+
+	if directory, error := getwd(); error == nil {
+		recurseDirectories(directory, target, search,
+			func(currentDirectory string) bool {
+				if target == "all" {
+					return false
+				}
+				if contains, _ := sliceContainsString(currentDirectory, exclusions); target == "" && contains {
+					return true
+				}
+				return false
+			},
+			func(currentDirectory string) {
+				directories = append(directories, currentDirectory)
+			})
+	}
+
+	numCommands := len(directories)
+
+	for _, directory := range directories {
+		if lastPrintLen == 0 {
+			printString := fmt.Sprintf("[%d of %d]", currentJob, numCommands)
+			lastPrintLen = len(printString)
+			fmt.Print(printString)
+		} else {
+			printString := fmt.Sprintf("%s[%d of %d]", strings.Repeat("\b", lastPrintLen), currentJob, numCommands)
+			lastPrintLen = len(printString) - lastPrintLen
+			fmt.Print(printString)
+		}
+
+		currentJob++
+
+		output := runShellCommand(directory, command, args...)
+
+		if output != "" {
+			outputs = append(outputs, output)
+		}
+	}
+
+	if len(outputs) != 0 {
+		for _, output := range outputs {
+			fmt.Printf("\n\n%s", output)
+		}
+		return currentJob - 1, len(outputs)
+	}
+	return currentJob - 1, 0
+}
+
+func runCommandParallel(target, search, command string, args ...string) (int, int) {
 	var outputs []string
 	lastPrintLen := 0
 	currentJob := 1
