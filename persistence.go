@@ -22,7 +22,7 @@ func exclude(directory string, config map[string]interface{}) {
 
 	// If the directory isn't in the array, add it
 	exclusions := config[configKeyExclusions].([]string)
-	if contains, _ := sliceContainsString(directory, exclusions); !contains || exclusions == nil {
+	if contains, _ := stringInSlice(directory, exclusions); !contains || exclusions == nil {
 		config[configKeyExclusions] = append(exclusions, directory)
 	}
 
@@ -35,7 +35,7 @@ func include(directory string, config map[string]interface{}) {
 
 	// If the directory is in the array, remove it
 	exclusions := config[configKeyExclusions].([]string)
-	if contains, index := sliceContainsString(directory, exclusions); contains {
+	if contains, index := stringInSlice(directory, exclusions); contains {
 		config[configKeyExclusions] = append(exclusions[:index], exclusions[index+1:]...)
 	}
 

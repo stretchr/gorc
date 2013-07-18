@@ -6,10 +6,10 @@ import (
 	"strings"
 )
 
-// sliceContainsString determines if a slice of string contains the target string
-func sliceContainsString(target string, slice []string) (bool, int) {
+// stringInSlice determines if a slice of string contains the target string
+func stringInSlice(target string, slice []string) (bool, int) {
 	for index, value := range slice {
-		if value == target {
+		if strings.Contains(target, value) {
 			return true, index
 		}
 	}

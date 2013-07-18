@@ -15,14 +15,20 @@ func filterPackages(packages []string, target string, exclusions []string) []str
 
 	filteredPackages := make([]string, 0, len(packages))
 
-	if target != "" {
-		for _, pkg := range packages {
+	for _, pkg := range packages {
+		if target != "" {
 			if strings.Contains(pkg, target) {
 				filteredPackages = append(filteredPackages, pkg)
 				break
 			}
+		} else {
+			if contains, _ := stringInSlice(pkg, exclusions); !contains {
+				filteredPackages = append(filteredPackages, pkg)
+			}
 		}
 	}
+
+	return filteredPackages
 
 }
 
