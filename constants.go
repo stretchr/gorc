@@ -18,3 +18,11 @@ const (
 	// errorCurrentDirectory is printed when an error occurs attempting to get the current working directory.
 	errorCurrentDirectory = "There was an error attempting to get directory in which gorc is being run: %s"
 )
+
+const (
+	// searchTest is the string for searching for test files
+	fileTypeTest = "_test.go"
+
+	// searchGo is the string for searching for go files
+	fileTypeGo = ".go"
+)
