@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"os/exec"
 	"strings"
 )
 
@@ -31,17 +30,4 @@ func formatExclusionsForPrint(exclusions []string) string {
 	excludedPackages := strings.Join(exclusions, "\n\t")
 	return fmt.Sprintf("Excluded Directories:\n\t%s", excludedPackages)
 
-}
-
-// runShellCommand runs a shell command in a specified directory and returns
-// a string containing all error output if the command fails
-func runShellCommand(directory, command string, arguments ...string) string {
-	shellCommand := exec.Command(command, arguments...)
-	shellCommand.Dir = directory
-
-	if output, error := shellCommand.CombinedOutput(); error != nil {
-		return string(output)
-	}
-
-	return ""
 }
