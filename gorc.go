@@ -63,7 +63,6 @@ func runShellCommand(directory, command string, arguments ...string) string {
 	output, _ := shellCommand.CombinedOutput()
 	return string(output)
 
-	return ""
 }
 
 func makeArgs(packages []string, commands ...string) []string {
