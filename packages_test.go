@@ -25,7 +25,7 @@ func TestPackagesFilterPackages(t *testing.T) {
 
 	filteredPackages = filterPackages(packages, "", []string{"testify"})
 	if assert.Equal(t, len(filteredPackages), 2) {
-		assert.Equal(t, filteredPackages[0], "github.com/stretchr/gowebs/")
+		assert.Equal(t, filteredPackages[0], "github.com/stretchr/goweb/")
 		assert.Equal(t, filteredPackages[1], "github.com/stretchr/goweb/helpers")
 	}
 

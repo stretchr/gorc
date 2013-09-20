@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 	"github.com/stretchr/commander"
-	"github.com/stretchr/stew/objects"
+	"github.com/stretchr/objx"
 	"os"
 	"os/exec"
 )
@@ -82,7 +82,7 @@ func main() {
 	commander.Go(func() {
 		// The default command installs tests, then runs tests.
 		commander.Map(commander.DefaultCommand, "", "",
-			func(args objects.Map) {
+			func(args objx.Map) {
 				execute(CommandTest, "")
 				return
 				if execute(CommandInstallTests, "") {
@@ -92,33 +92,33 @@ func main() {
 
 		commander.Map("test [packageName=(string)]", "Runs tests, or named test",
 			"If no packageName argument is specified, runs all tests recursively. If a packageName argument is specified, runs just that test, unless the argument is \"all\", in which case it runs all tests, including those in the exclusion list.",
-			func(args objects.Map) {
+			func(args objx.Map) {
 				//packageName := args.GetString("packageName")
 				fmt.Printf("Found packageNames: %v\n", buildPackageList(getwd(), fileTypeTest))
 			})
 
 		commander.Map("install [packageName=(string)]", "Installs tests, or named test",
 			"If no packageName argument is specified, installs all tests recursively. If a packageName argument is specified, installs just that test, unless the argument is \"all\", in which case it installs all tests, including those in the exclusion list.",
-			func(args objects.Map) {
+			func(args objx.Map) {
 				//packageName := args.GetString("packageName")
 			})
 
 		commander.Map("vet [packageName=(string)]", "Vets packageNames, or named packageName",
 			"If no packageName argument is specified, vets all packageNames recursively. If a packageName argument is specified, vets just that packageName, unless the argument is \"all\", in which case it vets all packageNames, including those in the exclusion list.",
-			func(args objects.Map) {
+			func(args objx.Map) {
 				//packageName := args.GetString("packageName")
 			})
 
 		commander.Map("race [packageName=(string)]", "Runs race detector on tests, or named test",
 			"If no packageName argument is specified, race tests all tests recursively. If a packageName argument is specified, vets just that test, unless the argument is \"all\", in which case it vets all tests, including those in the exclusion list.",
-			func(args objects.Map) {
+			func(args objx.Map) {
 				//packageName := args.GetString("packageName")
 			})
 
 		commander.Map("exclude packageName=(string)", "Excludes the named directory from recursion",
 			"An excluded directory will be skipped when walking the directory tree. Any subdirectories of the excluded directory will also be skipped.",
-			func(args objects.Map) {
-				packageName := args.GetString("packageName")
+			func(args objx.Map) {
+				packageName := args.Get("packageName").Str()
 				exclude(packageName, config)
 				fmt.Printf("\nExcluded \"%s\" from being examined during recursion.\n", packageName)
 				config = readConfig()
@@ -127,15 +127,15 @@ func main() {
 			})
 
 		commander.Map("include packageName=(string)", "Removes the named directory from the exclusion list", "",
-			func(args objects.Map) {
-				packageName := args.GetString("packageName")
+			func(args objx.Map) {
+				packageName := args.Get("packageName").Str()
 				include(packageName, config)
 				fmt.Printf("\nRemoved \"%s\" from the exclusion list.\n", packageName)
 				fmt.Printf("\n%s\n\n", formatExclusionsForPrint(exclusions))
 			})
 
 		commander.Map("exclusions", "Prints the exclusion list", "",
-			func(args objects.Map) {
+			func(args objx.Map) {
 				fmt.Printf("\n%s\n\n", formatExclusionsForPrint(exclusions))
 			})
 	})
