@@ -1,6 +1,7 @@
 package main
 
 import (
+	"strings"
 	"fmt"
 	"github.com/stretchr/commander"
 	"github.com/stretchr/objx"
@@ -42,16 +43,93 @@ func execute(command int, packageName string) bool {
 
 	switch command {
 	case CommandInstallTests:
+		fmt.Print(runShellCommand(directory, "go", makeArgs(packageList, "test", "-i")...))
 		//fmt.Printf("installing tests...\ngot output: %s\n", runShellCommand(directory, "go", "test", "-i", packageListString))
 	case CommandTest:
-		runShellCommand(directory, "go", makeArgs(packageList, "test")...)
+		output := runShellCommand(directory, "go", makeArgs(packageList, "test")...)
+		evaluateOutput(output)
 	case CommandInstall:
 	case CommandRace:
 	case CommandVet:
+		fmt.Print(runShellCommand(directory, "go", makeArgs(packageList, "vet")...))
 	}
 
 	return false
 
+}
+
+var (
+	ResponseTypePass int = 0
+	ResponseTypeFail int = 1
+	ResponseTypeMap map[string]int = map[string]int{
+		"ok": ResponseTypePass,
+		"FAIL": ResponseTypeFail,
+	}
+)
+
+// responseType checks the response type of a line.
+func responseType(line string) int {
+	firstWord := strings.Split(strings.Split(line, "	")[0], " ")[0]
+	typeString := strings.TrimSpace(firstWord)
+	if response, ok := ResponseTypeMap[typeString]; ok {
+		return response
+	}
+	return -1
+}
+
+// parseOutput takes the output from running "go test" on a set of
+// packages and parses it into information about the test results.
+func parseOutput(commandOutput string) objx.Map {
+	results := strings.Split(commandOutput, "\n")
+	responseMap := objx.New(map[string]interface{}{
+		"pass": []string{},
+		"fail": []string{},
+	})
+	var currentMessage string
+	for _, result := range results {
+		switch responseType(result) {
+		case ResponseTypePass:
+			currentPasses := responseMap.Get("pass").StrSlice()
+			responseMap.Set("pass", append(currentPasses, result))
+		case ResponseTypeFail:
+			currentMessage = fmt.Sprintf("%s\n%s", currentMessage, result)
+			if result != "FAIL" {
+				// Failure output has two lines - first, just "FAIL",
+				// and second, the failing test summary.  When we hit
+				// the summary, we want to store the message.
+				currentFailures := responseMap.Get("fail").StrSlice()
+				responseMap.Set("fail", append(currentFailures, currentMessage))
+				currentMessage = ""
+			}
+		default:
+			currentMessage = fmt.Sprintf("%s\n%s", currentMessage, result)
+		}
+	}
+	return responseMap
+}
+
+func evaluateOutput(output string) {
+	outputMap := parseOutput(output)
+	failures := len(outputMap.Get("fail").StrSlice())
+	passes := len(outputMap.Get("pass").StrSlice())
+	tests := failures + passes
+	prefix := "PASS"
+	if failures > 0 {
+		prefix = "FAIL"
+		fmt.Println("Passed Packages:")
+		for _, passMessage := range outputMap.Get("pass").StrSlice() {
+			fmt.Print(passMessage)
+			fmt.Println()
+		}
+		fmt.Println()
+		fmt.Println("Failed Packages:")
+		for _, failMessage := range outputMap.Get("fail").StrSlice() {
+			fmt.Print(failMessage)
+			fmt.Println()
+		}
+		fmt.Println()
+	}
+	fmt.Printf("%s: %d run, %d passed, %d failed\n", prefix, tests, passes, failures)
 }
 
 // runShellCommand runs a shell command in a specified directory and returns

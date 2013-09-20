@@ -38,13 +38,9 @@ func buildPackageList(startingDirectory, fileType string) []string {
 	packages := make([]string, 0)
 	_buildPackageList(startingDirectory, fileType, &packages)
 
-	fmt.Printf("before: %v\n", packages)
-
 	for i, pkg := range packages {
 		packages[i] = strings.Replace(pkg, startingDirectory, ".", 1)
 	}
-
-	fmt.Printf("after: %v\n", packages)
 
 	return packages
 }
