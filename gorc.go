@@ -42,9 +42,12 @@ func getwd() string {
 	return directory
 }
 
-func execute(command int, packageName string) bool {
+// execute runs one of the available commands.  It accepts an objx.Map
+// of options for the given command.
+func execute(command int, options objx.Map) bool {
 
 	directory := getwd()
+	packageName := options.Get("packageName").Str()
 
 	if packageList == nil {
 		var fileType string
@@ -242,10 +245,10 @@ func main() {
 		// The default command installs tests, then runs tests.
 		commander.Map(commander.DefaultCommand, "", "",
 			func(args objx.Map) {
-				execute(CommandTest, "")
+				execute(CommandTest, args)
 				return
-				if execute(CommandInstallTests, "") {
-					execute(CommandTest, "")
+				if execute(CommandInstallTests, args) {
+					execute(CommandTest, args)
 				}
 			})
 
@@ -253,35 +256,35 @@ func main() {
 			"If no packageName argument is specified, runs all tests recursively. If a packageName argument is specified, runs just that test, unless the argument is \"all\", in which case it runs all tests, including those in the exclusion list.",
 			func(args objx.Map) {
 				//packageName := args.GetString("packageName")
-				execute(CommandTest, "")
+				execute(CommandTest, args)
 			})
 
 		commander.Map("install [packageName=(string)]", "Installs tests, or named test",
 			"If no packageName argument is specified, installs all tests recursively. If a packageName argument is specified, installs just that test, unless the argument is \"all\", in which case it installs all tests, including those in the exclusion list.",
 			func(args objx.Map) {
 				//packageName := args.GetString("packageName")
-				execute(CommandInstallTests, "")
+				execute(CommandInstallTests, args)
 			})
 
 		commander.Map("vet [packageName=(string)]", "Vets packageNames, or named packageName",
 			"If no packageName argument is specified, vets all packageNames recursively. If a packageName argument is specified, vets just that packageName, unless the argument is \"all\", in which case it vets all packageNames, including those in the exclusion list.",
 			func(args objx.Map) {
 				//packageName := args.GetString("packageName")
-				execute(CommandVet, "")
+				execute(CommandVet, args)
 			})
 
 		commander.Map("race [packageName=(string)]", "Runs race detector on tests, or named test",
 			"If no packageName argument is specified, race tests all tests recursively. If a packageName argument is specified, vets just that test, unless the argument is \"all\", in which case it vets all tests, including those in the exclusion list.",
 			func(args objx.Map) {
 				//packageName := args.GetString("packageName")
-				execute(CommandRace, "")
+				execute(CommandRace, args)
 			})
 
 		commander.Map("coverage [packageName=(string)]", "Runs the test coverage tool on tests, or a named test",
 			"If no packageName argument is specified, coverage tests all tests recursively.  If a packageName argument is specified, checks coverage of just that package, unless the argument is \"all\", in which case it runs against all tests, including those in the exclusion list.",
 			func(args objx.Map) {
 				//packageName := args.GetString("packageName")
-				execute(CommandCover, "")
+				execute(CommandCover, args)
 			})
 
 		commander.Map("exclude packageName=(string)", "Excludes the named directory from recursion",
