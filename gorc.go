@@ -6,8 +6,11 @@ import (
 	"fmt"
 	"github.com/stretchr/commander"
 	"github.com/stretchr/objx"
+	"github.com/howeyc/fsnotify"
+	"syscall"
 	"os"
 	"os/exec"
+	"os/signal"
 )
 
 const (
@@ -17,6 +20,7 @@ const (
 	CommandRace
 	CommandVet
 	CommandCover
+	CommandWatch
 )
 
 const (
@@ -90,10 +94,72 @@ func execute(command int, options objx.Map) bool {
 		results := parseTestOutput(output)
 		printSummary(results)
 		printCoverage(results)
+	case CommandWatch:
+		// For now, just watch the test command.  We'll deal with more
+		// stuff later.
+		watch(CommandTest, options)
 	}
 
 	return false
 
+}
+
+func watch(command int, options objx.Map) {
+	done := make(chan bool)
+	interrupt := make(chan os.Signal)
+	signal.Notify(interrupt, syscall.SIGINT)
+	watcher, err := fsnotify.NewWatcher()
+	if err != nil {
+		panic(err)
+	}
+	go watchListener(command, watcher, done, interrupt, options)
+	for _, packagePath := range packageList {
+		watcher.Watch(packagePath)
+	}
+	<-done
+	fmt.Print("\nDone - exiting...\n")
+	watcher.Close()
+}
+
+func runWatcherTests(command int, event *fsnotify.FileEvent, watcher *fsnotify.Watcher, options objx.Map, finished chan bool) {
+	path := event.Name
+	if event.IsCreate() || event.IsRename() {
+		watcher.Watch(path)
+	} else if event.IsDelete() {
+		watcher.RemoveWatch(path)
+	}
+	// The package list may change every time there's a file
+	// change event in the directory, so rebuild it each time.
+	packageList = buildPackageList(getwd(), fileTypeTest)
+	execute(command, options)
+	fmt.Print("\n----------------------------------\n")
+	finished <- true
+}
+
+func watchListener(command int, watcher *fsnotify.Watcher, doneChan chan bool, interruptChan chan os.Signal, options objx.Map) {
+	fmt.Print("\nStarting FS Watcher for current directory and sub-"+
+		"directories, and running 'go test' whenever files are changed...")
+	fmt.Print("\n\n")
+	fmt.Print("\n----------------------------------\n")
+	testFinished := make(chan bool)
+	testing := false
+	for {
+		select {
+		case event := <-watcher.Event:
+			if !testing {
+				testing = true
+				go runWatcherTests(command, event, watcher, options, testFinished)
+			}
+		case <-testFinished:
+			testing = false
+		case <-interruptChan:
+			doneChan <- true
+			break
+		case err := <-watcher.Error:
+			fmt.Printf("Error: %s\n", err)
+			panic(err)
+		}
+	}
 }
 
 // installTests runs go test -i against the detected packages and
@@ -287,6 +353,13 @@ func main() {
 				execute(CommandCover, args)
 			})
 
+		commander.Map("watch [packageName=(string)]", "Watch for file changes and run gorc test every time a file changes",
+			"If no packageName argument is specified, watch tests recursively.  If a packageName argument is specified, watches just that package, unless the argument is \"all\", in which case it watches all packages, including those in the exclusion list.",
+			func(args objx.Map) {
+				// packageName := args.GetString("packageName")
+				execute(CommandWatch, args)
+			})
+
 		commander.Map("exclude packageName=(string)", "Excludes the named directory from recursion",
 			"An excluded directory will be skipped when walking the directory tree. Any subdirectories of the excluded directory will also be skipped.",
 			func(args objx.Map) {
@@ -310,6 +383,7 @@ func main() {
 			func(args objx.Map) {
 				fmt.Printf("\n%s\n\n", formatExclusionsForPrint(exclusions))
 			})
+
 	})
 
 }
