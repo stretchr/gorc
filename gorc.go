@@ -466,7 +466,6 @@ func main() {
 			func(args objx.Map) {
 				fmt.Printf("\n%s\n\n", formatExclusionsForPrint(exclusions))
 			})
-
 	})
 
 }
