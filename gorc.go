@@ -8,6 +8,7 @@ import (
 	"github.com/stretchr/objx"
 	"github.com/howeyc/fsnotify"
 	"syscall"
+	"time"
 	"os"
 	"os/exec"
 	"os/signal"
@@ -28,6 +29,14 @@ const (
 	ResponseTypeFail
 )
 
+const (
+	// When we receive a filesystem event, delay this amount before
+	// running the requested command.  This is necessary because a
+	// recursive delete will trigger testing before all of the files
+	// are deleted, resulting in file not found errors.
+	watchDelay string = "1s"
+)
+
 var (
 	ResponseTypeMap map[string]int = map[string]int{
 		"ok": ResponseTypePass,
@@ -35,6 +44,7 @@ var (
 	}
 	exclusions []string
 	packageList []string
+	watchedDirs map[string]bool
 )
 
 func getwd() string {
@@ -89,7 +99,7 @@ func execute(command int, options objx.Map) bool {
 		fmt.Print("\n\n")
 		fmt.Print(runShellCommand(directory, "go", makeArgs(packageList, "vet")...))
 	case CommandCover:
-		fmt.Print("\nRunning coverage tests: ")
+		fmt.Print("\nRunning coverage tests: \n\n")
 		output := runShellCommand(directory, "go", makeArgs(packageList, "test", "-cover")...)
 		results := parseTestOutput(output)
 		printSummary(results)
@@ -97,7 +107,21 @@ func execute(command int, options objx.Map) bool {
 	case CommandWatch:
 		// For now, just watch the test command.  We'll deal with more
 		// stuff later.
-		watch(CommandTest, options)
+		watchCommandStr := options.Get("command").Str()
+		var command int
+		switch watchCommandStr {
+		case "":
+			fallthrough
+		case "test":
+			command = CommandTest
+		case "vet":
+			command = CommandVet
+		case "race":
+			command = CommandRace
+		case "coverage":
+			command = CommandCover
+		}
+		watch(command, options)
 	}
 
 	return false
@@ -113,8 +137,9 @@ func watch(command int, options objx.Map) {
 		panic(err)
 	}
 	go watchListener(command, watcher, done, interrupt, options)
-	for _, packagePath := range packageList {
-		watcher.Watch(packagePath)
+	watchedDirs = buildSubdirMap(".")
+	for dir := range watchedDirs {
+		watcher.Watch(dir)
 	}
 	<-done
 	fmt.Print("\nDone - exiting...\n")
@@ -122,12 +147,6 @@ func watch(command int, options objx.Map) {
 }
 
 func runWatcherTests(command int, event *fsnotify.FileEvent, watcher *fsnotify.Watcher, options objx.Map, finished chan bool) {
-	path := event.Name
-	if event.IsCreate() || event.IsRename() {
-		watcher.Watch(path)
-	} else if event.IsDelete() {
-		watcher.RemoveWatch(path)
-	}
 	// The package list may change every time there's a file
 	// change event in the directory, so rebuild it each time.
 	packageList = buildPackageList(getwd(), fileTypeTest)
@@ -136,16 +155,80 @@ func runWatcherTests(command int, event *fsnotify.FileEvent, watcher *fsnotify.W
 	finished <- true
 }
 
+func handleCreatePath(watcher *fsnotify.Watcher, path string) {
+	finfo, err := os.Stat(path)
+	if err != nil {
+		fmt.Printf("Error reading new file: %s", path)
+		return
+	}
+	if finfo.IsDir() {
+		for dir := range buildSubdirMap(path) {
+			fmt.Println(watcher.Watch(dir))
+			watchedDirs[dir] = true
+		}
+	}
+}
+
+func handleDeletePath(watcher *fsnotify.Watcher, path string) {
+	if _, watched := watchedDirs[path]; watched {
+		fmt.Printf("Unwatching %s\n", path)
+		fmt.Println(watcher.RemoveWatch(path))
+		delete(watchedDirs, path)
+		for watchedDir := range watchedDirs {
+			// Remove sub-paths
+			pathWithTrailingSlash := path + string(os.PathSeparator)
+			if strings.HasPrefix(watchedDir, pathWithTrailingSlash) {
+				fmt.Println(watcher.RemoveWatch(watchedDir))
+				delete(watchedDirs, watchedDir)
+			}
+		}
+	}
+}
+
+func handleEvent(watcher *fsnotify.Watcher, event *fsnotify.FileEvent) {
+	path := event.Name
+	if strings.HasPrefix(path, "./") {
+		path = path[2:]
+	}
+	fmt.Printf("Received event for path %s: ", path)
+	switch {
+	case event.IsRename():
+		fmt.Print("Renamed\n")
+		if _, isWatched := watchedDirs[path]; isWatched {
+			handleDeletePath(watcher, path)
+		} else {
+			handleCreatePath(watcher, path)
+		}
+	case event.IsDelete():
+		fmt.Print("Deleted\n")
+		handleDeletePath(watcher, path)
+	case event.IsCreate():
+		fmt.Printf("Created\n")
+		handleCreatePath(watcher, path)
+	}
+}
+
 func watchListener(command int, watcher *fsnotify.Watcher, doneChan chan bool, interruptChan chan os.Signal, options objx.Map) {
-	fmt.Print("\nStarting FS Watcher for current directory and sub-"+
-		"directories, and running 'go test' whenever files are changed...")
+	fmt.Printf("\nStarting FS Watcher for current directory and sub-"+
+		"directories, and running %s tests whenever files are changed...", options.Get("command").Str())
 	fmt.Print("\n\n")
 	fmt.Print("\n----------------------------------\n")
 	testFinished := make(chan bool)
 	testing := false
+	delayDuration, err := time.ParseDuration(watchDelay)
+	if err != nil {
+		panic(err)
+	}
+	var (
+		delayTimer <-chan time.Time
+		event *fsnotify.FileEvent
+	)
 	for {
 		select {
-		case event := <-watcher.Event:
+		case event = <-watcher.Event:
+			handleEvent(watcher, event)
+			delayTimer = time.After(delayDuration)
+		case <-delayTimer:
 			if !testing {
 				testing = true
 				go runWatcherTests(command, event, watcher, options, testFinished)
@@ -353,7 +436,7 @@ func main() {
 				execute(CommandCover, args)
 			})
 
-		commander.Map("watch [packageName=(string)]", "Watch for file changes and run gorc test every time a file changes",
+		commander.Map("watch [command=(test)] [packageName=(string)]", "Watch for file changes and run gorc test every time a file changes",
 			"If no packageName argument is specified, watch tests recursively.  If a packageName argument is specified, watches just that package, unless the argument is \"all\", in which case it watches all packages, including those in the exclusion list.",
 			func(args objx.Map) {
 				// packageName := args.GetString("packageName")

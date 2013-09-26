@@ -3,7 +3,9 @@ package main
 import (
 	"fmt"
 	"os"
+	"io/ioutil"
 	"strings"
+	"path"
 )
 
 // filterPackages filters packages based on the named package and the exclusion list
@@ -81,4 +83,35 @@ func _buildPackageList(directory, fileType string, packages *[]string) {
 		*packages = append(*packages, directory)
 	}
 
+}
+
+// buildSubdirList recurses through a directory tree and returns a
+// map of sub-directories.  This doesn't do any checking for packages
+// or other go files - it's mainly for the watch command, which needs
+// to watch all sub-directories, regardless of contents.  A map is
+// used to make removal of directories easier.
+func buildSubdirMap(directory string) map[string]bool {
+	subdirs := make(map[string]bool)
+	if _, err := os.Stat(directory); err == nil {
+		_buildSubdirMap(directory, subdirs)
+	}
+	return subdirs
+}
+
+// _buildSubdirList is the recursive helper for buildSubdirMap]
+func _buildSubdirMap(directory string, subdirs map[string]bool) {
+	fmt.Printf("Adding directory %s\n", directory)
+	subdirs[directory] = true
+	dirs, err := ioutil.ReadDir(directory)
+	if err != nil {
+		panic(err)
+	}
+	for _, dir := range dirs {
+		if dir.IsDir() && !strings.HasPrefix(dir.Name(), ".") {
+			fmt.Printf("Found directory %s\n", dir.Name())
+			fullPath := path.Join(directory, dir.Name())
+			fmt.Printf("Full path %s\n", fullPath)
+			_buildSubdirMap(fullPath, subdirs)
+		}
+	}
 }
