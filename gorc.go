@@ -1,32 +1,36 @@
 package main
 
 import (
-	"strings"
-	"strconv"
+	"bufio"
 	"fmt"
-	"github.com/stretchr/commander"
-	"github.com/stretchr/objx"
-	"github.com/howeyc/fsnotify"
-	"syscall"
-	"time"
 	"os"
 	"os/exec"
 	"os/signal"
+	"strconv"
+	"strings"
+	"syscall"
+	"time"
+
+	"github.com/howeyc/fsnotify"
+	"github.com/stretchr/commander"
+	"github.com/stretchr/objx"
 )
 
+// An enum defining the various operations that gorc can perform
 const (
-	CommandInstallTests = iota
-	CommandTest
-	CommandInstall
-	CommandRace
-	CommandVet
-	CommandCover
-	CommandWatch
+	commandInstallTests = iota
+	commandTest
+	commandInstall
+	commandRace
+	commandVet
+	commandCover
+	commandWatch
 )
 
+// An enum defining the response types expected from parsing the test output
 const (
-	ResponseTypePass = iota
-	ResponseTypeFail
+	responseTypePass = iota
+	responseTypeFail
 )
 
 const (
@@ -38,11 +42,11 @@ const (
 )
 
 var (
-	ResponseTypeMap map[string]int = map[string]int{
-		"ok": ResponseTypePass,
-		"FAIL": ResponseTypeFail,
+	responseTypeMap = map[string]int{
+		"ok":   responseTypePass,
+		"FAIL": responseTypeFail,
 	}
-	exclusions []string
+	exclusions  []string
 	packageList []string
 	watchedDirs map[string]bool
 )
@@ -65,7 +69,7 @@ func execute(command int, options objx.Map) bool {
 
 	if packageList == nil {
 		var fileType string
-		if command == CommandTest || command == CommandInstallTests {
+		if command == commandTest || command == commandInstallTests {
 			fileType = fileTypeTest
 		} else {
 			fileType = fileTypeGo
@@ -75,36 +79,43 @@ func execute(command int, options objx.Map) bool {
 	}
 
 	switch command {
-	case CommandInstallTests:
+	case commandInstallTests:
 		fmt.Print("\nInstalling Tests: ")
 		// I cannot find example output for failed test install, so...
 		// I'm leaving it like this for now.
 		fmt.Print("\n\n")
-		fmt.Print(installTests(packageList, directory))
-	case CommandTest:
+		output := runShellCommand(directory, "go", makeArgs(packageList, "test", "-i")...)
+		success := true
+		for line := range output {
+			if line != "" {
+				fmt.Println(line)
+				success = false
+			}
+		}
+		return success
+	case commandTest:
 		fmt.Print("\nRunning tests: ")
 		output := runShellCommand(directory, "go", makeArgs(packageList, "test")...)
 		results := parseTestOutput(output)
 		printSummary(results)
-	case CommandInstall:
-	case CommandRace:
+	case commandInstall:
+	case commandRace:
 		fmt.Print("\nRunning race tests: ")
 		output := runShellCommand(directory, "go", makeArgs(packageList, "test", "-race")...)
 		results := parseTestOutput(output)
 		printSummary(results)
-	case CommandVet:
+	case commandVet:
 		fmt.Print("\nVetting Packages: ")
 		// This seems to just contain some basic output about
 		// packages, so just print it out.
 		fmt.Print("\n\n")
 		fmt.Print(runShellCommand(directory, "go", makeArgs(packageList, "vet")...))
-	case CommandCover:
+	case commandCover:
 		fmt.Print("\nRunning coverage tests: \n\n")
 		output := runShellCommand(directory, "go", makeArgs(packageList, "test", "-cover")...)
 		results := parseTestOutput(output)
-		printSummary(results)
 		printCoverage(results)
-	case CommandWatch:
+	case commandWatch:
 		// For now, just watch the test command.  We'll deal with more
 		// stuff later.
 		watchCommandStr := options.Get("command").Str()
@@ -113,13 +124,13 @@ func execute(command int, options objx.Map) bool {
 		case "":
 			fallthrough
 		case "test":
-			command = CommandTest
+			command = commandTest
 		case "vet":
-			command = CommandVet
+			command = commandVet
 		case "race":
-			command = CommandRace
+			command = commandRace
 		case "coverage":
-			command = CommandCover
+			command = commandCover
 		}
 		watch(command, options)
 	}
@@ -221,7 +232,7 @@ func watchListener(command int, watcher *fsnotify.Watcher, doneChan chan bool, i
 	}
 	var (
 		delayTimer <-chan time.Time
-		event *fsnotify.FileEvent
+		event      *fsnotify.FileEvent
 	)
 	for {
 		select {
@@ -245,12 +256,6 @@ func watchListener(command int, watcher *fsnotify.Watcher, doneChan chan bool, i
 	}
 }
 
-// installTests runs go test -i against the detected packages and
-// returns the output.
-func installTests(packageList []string, directory string) string {
-	return runShellCommand(directory, "go", makeArgs(packageList, "test", "-i")...)
-}
-
 // responseType checks the response type of a line.
 func responseType(line string) int {
 	firstWord := ""
@@ -259,7 +264,7 @@ func responseType(line string) int {
 		firstWord = strings.Fields(line)[0]
 	}
 	typeString := strings.TrimSpace(firstWord)
-	if response, ok := ResponseTypeMap[typeString]; ok {
+	if response, ok := responseTypeMap[typeString]; ok {
 		return response
 	}
 	return -1
@@ -267,27 +272,27 @@ func responseType(line string) int {
 
 // parseTestOutput takes the output from running "go test" on a set of
 // packages and parses it into information about the test results.
-func parseTestOutput(commandOutput string) objx.Map {
-	results := strings.Split(commandOutput, "\n")
+func parseTestOutput(commandOutput chan string) objx.Map {
 	responseMap := objx.New(map[string]interface{}{
-		"pass": []string{},
-		"fail": []string{},
+		"pass":     []string{},
+		"fail":     []string{},
 		"coverage": map[string]float32{},
 	})
 	var (
 		currentMessage string
-		coverage float32
-		pkgName string
+		coverage       float32
+		pkgName        string
 	)
-	for _, result := range results {
+	for result := range commandOutput {
 		pkgName = ""
 		coverage = -1.0
 		switch responseType(result) {
-		case ResponseTypePass:
+		case responseTypePass:
 			currentPasses := responseMap.Get("pass").StrSlice()
 			responseMap.Set("pass", append(currentPasses, result))
 			pkgName, coverage = parseNameAndCoverage(result)
-		case ResponseTypeFail:
+			printProgress(responseMap)
+		case responseTypeFail:
 			currentMessage = fmt.Sprintf("%s\n%s", currentMessage, result)
 			if result != "FAIL" {
 				// Failure output has two lines - first, just "FAIL",
@@ -297,6 +302,7 @@ func parseTestOutput(commandOutput string) objx.Map {
 				responseMap.Set("fail", append(currentFailures, currentMessage))
 				currentMessage = ""
 				pkgName, coverage = parseNameAndCoverage(result)
+				printProgress(responseMap)
 			}
 		default:
 			currentMessage = fmt.Sprintf("%s\n%s", currentMessage, result)
@@ -314,8 +320,12 @@ func parseTestOutput(commandOutput string) objx.Map {
 // exists.  If no coverage value is found, a value of -1.0 will
 // be returned.
 func parseNameAndCoverage(line string) (string, float32) {
-	pkgName := strings.Fields(line)[1]
-	var coverage float32 = -1.0
+	fields := strings.Fields(line)
+	if len(fields) <= 1 {
+		return "", -1.0
+	}
+	pkgName := fields[1]
+	coverage := -1.0
 	coverageLine := "coverage: "
 	coverageStart := strings.Index(line, coverageLine)
 	var coverageEnd int
@@ -326,10 +336,30 @@ func parseNameAndCoverage(line string) (string, float32) {
 	if coverageStart >= 0 && coverageEnd > 0 {
 		coverage64, err := strconv.ParseFloat(line[coverageStart:coverageEnd], 32)
 		if err == nil {
-			coverage = float32(coverage64)
+			coverage = coverage64
 		}
 	}
-	return pkgName, coverage
+	return pkgName, float32(coverage)
+}
+
+var lastPrintLen = 0
+
+// printProgress will print out the progress of these tests as they run
+func printProgress(results objx.Map) {
+	failures := len(results.Get("fail").StrSlice())
+	passes := len(results.Get("pass").StrSlice())
+	tests := failures + passes
+
+	if lastPrintLen == 0 {
+		printString := fmt.Sprintf("[%d of %d]", tests, len(packageList))
+		lastPrintLen = len(printString)
+		fmt.Print(printString)
+	} else {
+		printString := fmt.Sprintf("%s[%d of %d]", strings.Repeat("\b", lastPrintLen), tests, len(packageList))
+		lastPrintLen = len(printString) - lastPrintLen
+		fmt.Print(printString)
+	}
+
 }
 
 // printSummary will print out a summary of the results, and if there
@@ -370,13 +400,47 @@ func printCoverage(results objx.Map) {
 
 // runShellCommand runs a shell command in a specified directory and returns
 // a string containing all error output if the command fails
-func runShellCommand(directory, command string, arguments ...string) string {
+func runShellCommand(directory, command string, arguments ...string) chan string {
 	shellCommand := exec.Command(command, arguments...)
 	shellCommand.Dir = directory
+	stdoutPipe, err := shellCommand.StdoutPipe()
+	if err != nil {
+		panic(fmt.Sprintf("Cannot establish pipe to command: %s", err))
+	}
+	stderrPipe, err := shellCommand.StderrPipe()
+	if err != nil {
+		panic(fmt.Sprintf("Cannot establish pipe to command: %s", err))
+	}
 
-	output, _ := shellCommand.CombinedOutput()
-	return string(output)
+	output := make(chan string)
 
+	go func() {
+		shellCommand.Start()
+		stdoutReader := bufio.NewReader(stdoutPipe)
+		stderrReader := bufio.NewReader(stderrPipe)
+		for {
+			stdoutLine, stdoutErr := stdoutReader.ReadString('\n')
+			stderrLine, stderrErr := stderrReader.ReadString('\n')
+
+			if stdoutErr != nil && stderrErr != nil {
+				if len(stdoutLine) > 0 {
+					output <- stdoutLine
+				}
+				if len(stderrLine) > 0 {
+					output <- stderrLine
+				}
+				close(output)
+				return
+			}
+			if len(stdoutLine) > 0 {
+				output <- stdoutLine
+			}
+			if len(stderrLine) > 0 {
+				output <- stderrLine
+			}
+		}
+	}()
+	return output
 }
 
 func makeArgs(packages []string, commands ...string) []string {
@@ -394,10 +458,8 @@ func main() {
 		// The default command installs tests, then runs tests.
 		commander.Map(commander.DefaultCommand, "", "",
 			func(args objx.Map) {
-				execute(CommandTest, args)
-				return
-				if execute(CommandInstallTests, args) {
-					execute(CommandTest, args)
+				if execute(commandInstallTests, args) {
+					execute(commandTest, args)
 				}
 			})
 
@@ -405,42 +467,42 @@ func main() {
 			"If no packageName argument is specified, runs all tests recursively. If a packageName argument is specified, runs just that test, unless the argument is \"all\", in which case it runs all tests, including those in the exclusion list.",
 			func(args objx.Map) {
 				//packageName := args.GetString("packageName")
-				execute(CommandTest, args)
+				execute(commandTest, args)
 			})
 
 		commander.Map("install [packageName=(string)]", "Installs tests, or named test",
 			"If no packageName argument is specified, installs all tests recursively. If a packageName argument is specified, installs just that test, unless the argument is \"all\", in which case it installs all tests, including those in the exclusion list.",
 			func(args objx.Map) {
 				//packageName := args.GetString("packageName")
-				execute(CommandInstallTests, args)
+				execute(commandInstallTests, args)
 			})
 
 		commander.Map("vet [packageName=(string)]", "Vets packageNames, or named packageName",
 			"If no packageName argument is specified, vets all packageNames recursively. If a packageName argument is specified, vets just that packageName, unless the argument is \"all\", in which case it vets all packageNames, including those in the exclusion list.",
 			func(args objx.Map) {
 				//packageName := args.GetString("packageName")
-				execute(CommandVet, args)
+				execute(commandVet, args)
 			})
 
 		commander.Map("race [packageName=(string)]", "Runs race detector on tests, or named test",
 			"If no packageName argument is specified, race tests all tests recursively. If a packageName argument is specified, vets just that test, unless the argument is \"all\", in which case it vets all tests, including those in the exclusion list.",
 			func(args objx.Map) {
 				//packageName := args.GetString("packageName")
-				execute(CommandRace, args)
+				execute(commandRace, args)
 			})
 
 		commander.Map("coverage [packageName=(string)]", "Runs the test coverage tool on tests, or a named test",
 			"If no packageName argument is specified, coverage tests all tests recursively.  If a packageName argument is specified, checks coverage of just that package, unless the argument is \"all\", in which case it runs against all tests, including those in the exclusion list.",
 			func(args objx.Map) {
 				//packageName := args.GetString("packageName")
-				execute(CommandCover, args)
+				execute(commandCover, args)
 			})
 
 		commander.Map("watch [command=(test)] [packageName=(string)]", "Watch for file changes and run gorc test every time a file changes",
 			"If no packageName argument is specified, watch tests recursively.  If a packageName argument is specified, watches just that package, unless the argument is \"all\", in which case it watches all packages, including those in the exclusion list.",
 			func(args objx.Map) {
 				// packageName := args.GetString("packageName")
-				execute(CommandWatch, args)
+				execute(commandWatch, args)
 			})
 
 		commander.Map("exclude packageName=(string)", "Excludes the named directory from recursion",

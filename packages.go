@@ -2,10 +2,10 @@ package main
 
 import (
 	"fmt"
-	"os"
 	"io/ioutil"
-	"strings"
+	"os"
 	"path"
+	"strings"
 )
 
 // filterPackages filters packages based on the named package and the exclusion list
@@ -37,7 +37,7 @@ func filterPackages(packages []string, target string, exclusions []string) []str
 // buildPackageList recurses through a directory tree and returns a list of packages for the go command to act upon
 // It also filters the results to only include packages that contain the type of file we are looking for
 func buildPackageList(startingDirectory, fileType string) []string {
-	packages := make([]string, 0)
+	var packages []string
 	_buildPackageList(startingDirectory, fileType, &packages)
 
 	for i, pkg := range packages {
